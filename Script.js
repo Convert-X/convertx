@@ -908,21 +908,14 @@ methodTabs.forEach(function(tab) {
     });
 });
 
-// ── Upscale: пряма обробка файлів (без setupDragDrop) ──
+// ── Upscale: пряма обробка файлів ──
 (function() {
     var dz  = dropZoneUpscale;
     var inp = fileInputUpscale;
 
-    // Кнопка "Choose file"
-    var chooseBtn = document.getElementById('upscaleChooseBtn');
-    if (chooseBtn) chooseBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        inp.click();
-    });
-
-    // Клік на будь-яку частину drop zone (крім кнопки)
+    // Клік на зону (але НЕ на label/input) — відкриваємо діалог
     dz.addEventListener('click', function(e) {
-        if (e.target.closest('#upscaleChooseBtn')) return;
+        if (e.target.closest('label') || e.target === inp) return;
         inp.click();
     });
 
