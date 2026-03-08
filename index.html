@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConvertX — Конвертор файлів</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ===== SIDEBAR ===== -->
+    <nav id="sidebar">
+        <div class="logo">
+            <div class="logo-mark">CX</div>
+            <span class="logo-text">ConvertX</span>
+        </div>
+
+        <div class="nav-section-label" data-i18n="nav_tools">Інструменти</div>
+        <ul class="nav-list">
+            <li class="nav-item active" data-section="convert">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h6l2 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="m16 12-3-3-3 3M13 9v6"/></svg>
+                </span>
+                <span class="nav-label" data-i18n="nav_convert">Конвертація</span>
+            </li>
+            <li class="nav-item" data-section="enhance">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                </span>
+                <span class="nav-label" data-i18n="nav_enhance">Покращення</span>
+            </li>
+            <li class="nav-item" data-section="upscale">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                </span>
+                <span class="nav-label" data-i18n="nav_upscale">Апскейл</span>
+            </li>
+            <li class="nav-item" data-section="compress">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                </span>
+                <span class="nav-label" data-i18n="nav_compress">Стиснення</span>
+            </li>
+            <li class="nav-item" data-section="pdf">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
+                </span>
+                <span class="nav-label">PDF</span>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <span class="version">v0.3.0</span>
+            <span class="footer-hint" data-i18n="footer_hint">Більше форматів — скоро</span>
+            <div class="privacy-badge" id="privacyBadge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <span data-i18n="privacy_label">Приватно</span>
+                <div class="privacy-tooltip">
+                    <div class="tooltip-title" data-i18n="privacy_title">🔒 100% Конфіденційно</div>
+                    <p data-i18n="privacy_text">Ми <strong>нічого не збираємо</strong>.<br>
+                    Усі файли обробляються лише у твоєму браузері — жоден байт не покидає твій пристрій.</p>
+                    <div class="tooltip-tags">
+                        <span data-i18n="privacy_t1">Без серверів</span>
+                        <span data-i18n="privacy_t2">Без реєстрації</span>
+                        <span data-i18n="privacy_t3">Без логів</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== MOBILE BG CLOCK ===== -->
+    <div id="deco-mobile-bg">
+        <img src="clock.png" alt="" draggable="false">
+    </div>
+
+    <!-- ===== HAMBURGER (mobile) ===== -->
+    <button id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+    </button>
+    <div id="sidebar-overlay"></div>
+
+    <!-- ===== DIVIDER ===== -->
+    <div id="sidebar-divider"></div>
+
+    <!-- ===== TOPBAR ===== -->
+    <div id="topbar">
+        <div class="topbar-right">
+            <div class="lang-switcher" id="langSwitcher">
+                <button class="lang-btn" id="langToggle" title="Language">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                    <span id="currentLangLabel">EN</span>
+                </button>
+                <div class="lang-dropdown" id="langDropdown" hidden>
+                    <button class="lang-option active-lang" data-lang="en">
+                        <span class="lang-flag">🇬🇧</span><span>English</span><span class="lang-check">✓</span>
+                    </button>
+                    <button class="lang-option" data-lang="uk">
+                        <span class="lang-flag">🇺🇦</span><span>Українська</span><span class="lang-check" style="opacity:0">✓</span>
+                    </button>
+                    <button class="lang-option" data-lang="de">
+                        <span class="lang-flag">🇩🇪</span><span>Deutsch</span><span class="lang-check" style="opacity:0">✓</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CLOCK DECORATION ===== -->
+    <div id="deco-panel">
+      <div class="clock-scene">
+        <div class="clock-glow-bg"></div>
+        <svg class="clock-svg" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stop-color="#e8a030" stop-opacity="0.7"/>
+              <stop offset="50%"  stop-color="#e8a030" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#e8a030" stop-opacity="0.7"/>
+            </linearGradient>
+          </defs>
+          <!-- Зовнішній ореол з рисками — проти годинникової -->
+          <g class="ring-ccw-slow">
+            <circle cx="300" cy="300" r="292" fill="none" stroke="rgba(232,160,48,0.08)" stroke-width="6"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(0   300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(30  300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(60  300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(90  300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(120 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(150 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(180 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(210 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(240 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(270 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(300 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(330 300 300)"/>
+          </g>
+          <!-- Штриховане кільце — за годинниковою повільно -->
+          <g class="ring-cw-slow">
+            <circle cx="300" cy="300" r="274" fill="none" stroke="rgba(232,160,48,0.20)" stroke-width="1.5" stroke-dasharray="3 9"/>
+          </g>
+          <!-- Орбіта з ромбами -->
+          <g class="ring-ccw-mid">
+            <circle cx="300" cy="300" r="255" fill="none" stroke="rgba(232,160,48,0.12)" stroke-width="1"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.6)"  transform="rotate(0   300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.25)" transform="rotate(45  300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.6)"  transform="rotate(90  300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.25)" transform="rotate(135 300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.6)"  transform="rotate(180 300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.25)" transform="rotate(225 300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.6)"  transform="rotate(270 300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.25)" transform="rotate(315 300 300)"/>
+          </g>
+          <!-- Швидка орбіта з трьома крапками -->
+          <g class="orbit-fast">
+            <circle cx="300" cy="300" r="232" fill="none" stroke="rgba(232,160,48,0.10)" stroke-width="1" stroke-dasharray="1 14"/>
+            <circle cx="300" cy="67" r="4.5" fill="rgba(232,160,48,0.80)" transform="rotate(0   300 300)"/>
+            <circle cx="300" cy="67" r="4.5" fill="rgba(232,160,48,0.80)" transform="rotate(120 300 300)"/>
+            <circle cx="300" cy="67" r="4.5" fill="rgba(232,160,48,0.80)" transform="rotate(240 300 300)"/>
+          </g>
+          <!-- Реверс — дрібні риски -->
+          <g class="orbit-rev">
+            <circle cx="300" cy="300" r="210" fill="none" stroke="rgba(232,160,48,0.18)" stroke-width="1" stroke-dasharray="8 4"/>
+          </g>
+          <!-- Внутрішнє швидке з трикутниками -->
+          <g class="ring-cw-fast">
+            <circle cx="300" cy="300" r="188" fill="none" stroke="rgba(232,160,48,0.22)" stroke-width="1" stroke-dasharray="18 6"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(0   300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(60  300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(120 300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(180 300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(240 300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(300 300 300)"/>
+          </g>
+        </svg>
+        <img src="clock.png" alt="" class="clock-img" draggable="false">
+      </div>
+    </div>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main id="main">
+
+        <!-- ── SECTION: КОНВЕРТАЦІЯ ── -->
+        <section class="section active" id="section-convert">
+            <div class="section-header">
+                <h1 data-i18n="convert_title">Конвертація <span class="accent">зображень</span></h1>
+                <p class="section-desc" data-i18n="convert_desc">Перетворюй JPG, PNG, WEBP без втрати якості</p>
+            </div>
+
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-animation">
+                    <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
+                        <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="22" cy="28" r="4" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="8,44 22,30 32,40 42,32 56,44" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <p class="drop-main" data-i18n="drop_main">Перетягни файл сюди</p>
+                <p class="drop-or" data-i18n="drop_or">або</p>
+                <label class="btn-choose" data-i18n="drop_choose" onclick="document.getElementById('fileInput').click(); return false;">Вибрати файл</label>
+                <input type="file" id="fileInput" accept="image/*" hidden>
+                <p class="drop-hint" data-i18n="drop_hint_img">JPG · PNG · WEBP · GIF · до 50MB</p>
+            </div>
+
+            <div class="file-info-bar" id="fileInfo" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+                <span id="fileName" class="file-name"></span>
+                <span id="fileSize" class="file-size"></span>
+                <button id="clearFileBtn" class="clear-btn" title="✕">✕</button>
+            </div>
+
+            <div class="controls-grid" id="convertControls" hidden>
+                <div class="control-card">
+                    <label class="control-label" data-i18n="ctrl_format">Формат виводу</label>
+                    <select id="formatSelect" class="styled-select">
+                        <option value="jpeg">JPG</option>
+                        <option value="png">PNG</option>
+                        <option value="webp">WEBP</option>
+                    </select>
+                </div>
+                <div class="control-card">
+                    <label class="control-label"><span data-i18n="ctrl_quality">Якість</span>: <span id="qualityValue" class="slider-val">90</span>%</label>
+                    <input type="range" id="qualityRange" class="styled-range" min="1" max="100" value="90">
+                </div>
+            </div>
+
+            <div class="action-row" id="convertActions" hidden>
+                <button id="convertBtn" class="btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                    <span data-i18n="btn_convert">Конвертувати</span>
+                </button>
+                <a hidden id="downloadBtn" class="btn-download">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span data-i18n="btn_download">Завантажити</span>
+                </a>
+            </div>
+
+            <div class="progress-wrap" id="progressWrap" hidden>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span class="progress-label" id="progressLabel" data-i18n="prog_processing">Обробка...</span>
+            </div>
+        </section>
+
+        <!-- ── SECTION: ПОКРАЩЕННЯ ── -->
+        <section class="section" id="section-enhance">
+            <div class="section-header">
+                <h1 data-i18n="enhance_title">Image <span class="accent">Enhancement</span></h1>
+                <p class="section-desc" data-i18n="enhance_desc">Brightness, contrast, sharpness — all in one place</p>
+            </div>
+
+            <div class="drop-zone" id="dropZoneEnhance">
+                <div class="drop-animation">
+                    <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
+                        <circle cx="32" cy="32" r="12" stroke="currentColor" stroke-width="2"/>
+                        <path d="M32 8v4M32 52v4M8 32h4M52 32h4M14.34 14.34l2.83 2.83M46.83 46.83l2.83 2.83M46.83 17.17l-2.83 2.83M17.17 46.83l-2.83 2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <p class="drop-main" data-i18n="drop_main">Drop file here</p>
+                <p class="drop-or" data-i18n="drop_or">or</p>
+                <label class="btn-choose" data-i18n="drop_choose" onclick="document.getElementById('fileInputEnhance').click(); return false;">Choose file</label>
+                <input type="file" id="fileInputEnhance" accept="image/*" hidden>
+            </div>
+
+            <div class="enhance-workspace" id="enhanceWorkspace" hidden>
+                <div class="preview-box">
+                    <p class="preview-label" data-i18n="preview_label">Preview</p>
+                    <img id="previewImg" alt="Preview">
+                </div>
+
+                <div class="enhance-panel">
+                    <div class="control-card">
+                        <label class="control-label"><span data-i18n="ctrl_brightness">Brightness</span>: <span id="brightnessValue" class="slider-val">0</span></label>
+                        <input type="range" id="brightnessRange" class="styled-range" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-card">
+                        <label class="control-label"><span data-i18n="ctrl_contrast">Contrast</span>: <span id="contrastValue" class="slider-val">0</span></label>
+                        <input type="range" id="contrastRange" class="styled-range" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-card">
+                        <label class="control-label"><span data-i18n="ctrl_saturation">Saturation</span>: <span id="saturationValue" class="slider-val">0</span></label>
+                        <input type="range" id="saturationRange" class="styled-range" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-card">
+                        <label class="control-label"><span data-i18n="ctrl_sharpness">Sharpness</span>: <span id="sharpValue" class="slider-val">0</span>%</label>
+                        <input type="range" id="sharpnessRange" class="styled-range" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="action-row">
+                        <button id="resetEnhanceBtn" class="btn-secondary" data-i18n="btn_reset">Reset</button>
+                        <button id="applyEnhanceBtn" class="btn-primary" data-i18n="btn_save">Save result</button>
+                    </div>
+                    <a hidden id="downloadEnhanceBtn" class="btn-download" style="width:100%;justify-content:center;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span data-i18n="btn_download">Download</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- hidden canvas for export -->
+            <canvas id="exportCanvas" hidden></canvas>
+        </section>
+
+        <!-- ── SECTION: АПСКЕЙЛ ── -->
+        <section class="section" id="section-upscale">
+            <div class="section-header">
+                <h1 data-i18n="upscale_title">Image <span class="accent">Upscale</span></h1>
+                <p class="section-desc" data-i18n="upscale_desc">Increase resolution — two methods to choose from</p>
+            </div>
+
+            <!-- Метод -->
+            <div class="method-tabs" id="methodTabs">
+                <button class="method-tab active" data-method="lanczos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+                    <div>
+                        <span class="method-name" data-i18n="method_lanczos">Lanczos</span>
+                        <span class="method-desc" data-i18n="method_desc_l">Mathematical · Instant</span>
+                    </div>
+                </button>
+                <button class="method-tab" data-method="ai">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/><circle cx="18" cy="5" r="3"/><path d="m15.5 3.5 5 5"/></svg>
+                    <div>
+                        <span class="method-name" data-i18n="method_ai">AI Real-ESRGAN</span>
+                        <span class="method-desc" data-i18n="method_desc_ai">Neural network · Slower</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- AI Warning -->
+            <div class="ai-notice" id="aiNotice" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span data-i18n="ai_notice">First run downloads the model (~5MB). Then cached in browser. Processing may take 10–60s depending on image size.</span>
+            </div>
+
+            <div class="drop-zone" id="dropZoneUpscale">
+                <div class="drop-animation">
+                    <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
+                        <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2"/>
+                        <path d="M32 38V26M26 32l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <p class="drop-main" data-i18n="drop_main">Drop file here</p>
+                <p class="drop-or" data-i18n="drop_or">or</p>
+                <label class="btn-choose" data-i18n="drop_choose" onclick="document.getElementById('fileInputUpscale').click(); return false;">Choose file</label>
+                <input type="file" id="fileInputUpscale" accept="image/*" hidden>
+                <p class="drop-hint" data-i18n="drop_hint_upscale">JPG · PNG · WEBP · recommended up to 2000×2000px for AI</p>
+            </div>
+
+            <!-- Контролі -->
+            <div id="upscaleControls" hidden>
+                <div class="controls-grid">
+                    <div class="control-card">
+                        <label class="control-label" data-i18n="ctrl_scale">Scale factor</label>
+                        <select id="scaleSelect" class="styled-select">
+                            <option value="2">×2</option>
+                            <option value="3">×3</option>
+                            <option value="4">×4</option>
+                        </select>
+                    </div>
+                    <div class="control-card" id="sizePreviewCard">
+                        <label class="control-label" data-i18n="ctrl_result_size">Output size</label>
+                        <div class="size-preview">
+                            <span id="origSize" class="size-val">—</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--accent)"><polyline points="9,18 15,12 9,6"/></svg>
+                            <span id="newSize" class="size-val accent">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <button id="upscaleBtn" class="btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                        <span data-i18n="btn_upscale">Upscale</span>
+                    </button>
+                    <a hidden id="downloadUpscaleBtn" class="btn-download">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span data-i18n="btn_download">Download</span>
+                    </a>
+                </div>
+
+                <div class="progress-wrap" id="upscaleProgress" hidden>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="upscaleProgressFill"></div>
+                    </div>
+                    <span class="progress-label" id="upscaleProgressLabel" data-i18n="prog_processing">Processing...</span>
+                </div>
+
+                <div class="upscale-compare" id="upscaleCompare" hidden>
+                    <div class="compare-box">
+                        <p class="preview-label" data-i18n="compare_before">Before</p>
+                        <img id="upscaleOrigImg" alt="Original">
+                    </div>
+                    <div class="compare-box">
+                        <p class="preview-label" data-i18n="compare_after">After</p>
+                        <img id="upscaleResultImg" alt="Result">
+                    </div>
+                </div>
+            </div>
+
+            <canvas id="upscaleCanvas" hidden></canvas>
+        </section>
+
+        <!-- ── SECTION: СТИСНЕННЯ ── -->
+        <section class="section" id="section-compress">
+            <div class="section-header">
+                <h1 data-i18n="compress_title">Стиснення <span class="accent">файлів</span></h1>
+                <p class="section-desc" data-i18n="compress_desc">Зменшуй розмір зображень без помітної втрати якості</p>
+            </div>
+
+            <div class="drop-zone" id="dropZoneCompress">
+                <div class="drop-animation">
+                    <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
+                        <rect x="8" y="8" width="48" height="48" rx="4" stroke="currentColor" stroke-width="2"/>
+                        <path d="M32 44V20M24 36l8 8 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <p class="drop-main" data-i18n="drop_main">Перетягни файл сюди</p>
+                <p class="drop-or" data-i18n="drop_or">або</p>
+                <label class="btn-choose" data-i18n="drop_choose" onclick="document.getElementById('fileInputCompress').click();return false;">Вибрати файл</label>
+                <input type="file" id="fileInputCompress" accept="image/*" hidden>
+                <p class="drop-hint">JPG · PNG · WEBP · до 50MB</p>
+            </div>
+
+            <div id="compressControls" hidden>
+                <div class="controls-grid">
+                    <div class="control-card">
+                        <label class="control-label"><span data-i18n="compress_level">Рівень стиснення</span>: <span id="compressValue" class="slider-val">75</span>%</label>
+                        <input type="range" id="compressRange" class="styled-range" min="1" max="99" value="75">
+                    </div>
+                    <div class="control-card" id="compressSizeCard">
+                        <label class="control-label" data-i18n="compress_size_label">Розмір файлу</label>
+                        <div class="size-preview">
+                            <span id="compressOrigSize" class="size-val">—</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--accent)"><polyline points="9,18 15,12 9,6"/></svg>
+                            <span id="compressNewSize" class="size-val accent">—</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button id="compressBtn" class="btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        <span data-i18n="btn_compress">Стиснути</span>
+                    </button>
+                    <a hidden id="downloadCompressBtn" class="btn-download">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span data-i18n="btn_download">Завантажити</span>
+                    </a>
+                </div>
+                <div class="progress-wrap" id="compressProgress" hidden>
+                    <div class="progress-bar"><div class="progress-fill" id="compressProgressFill"></div></div>
+                    <span class="progress-label" id="compressProgressLabel">Стиснення...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── SECTION: PDF ── -->
+        <section class="section" id="section-pdf">
+            <div class="section-header">
+                <h1 data-i18n="pdf_title">PDF <span class="accent">інструменти</span></h1>
+                <p class="section-desc" data-i18n="pdf_desc">Перетвори зображення в PDF або PDF у зображення</p>
+            </div>
+
+            <div class="pdf-modes">
+                <button class="method-tab active" data-pdf-mode="img2pdf">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+                    <div>
+                        <span class="method-name" data-i18n="pdf_mode_img2pdf">Фото → PDF</span>
+                        <span class="method-desc" data-i18n="pdf_mode_img2pdf_desc">Один або кілька JPG/PNG в PDF</span>
+                    </div>
+                </button>
+                <button class="method-tab" data-pdf-mode="pdf2img">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                    <div>
+                        <span class="method-name" data-i18n="pdf_mode_pdf2img">PDF → Фото</span>
+                        <span class="method-desc" data-i18n="pdf_mode_pdf2img_desc">Кожна сторінка як PNG</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- IMG → PDF -->
+            <div id="pdfImgMode">
+                <div class="drop-zone" id="dropZonePdf">
+                    <div class="drop-animation">
+                        <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
+                            <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="22" cy="28" r="4" stroke="currentColor" stroke-width="2"/>
+                            <polyline points="8,44 22,30 32,40 42,32 56,44" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <p class="drop-main" data-i18n="pdf_drop_multi">Перетягни одне або кілька зображень</p>
+                    <p class="drop-or" data-i18n="drop_or">або</p>
+                    <label class="btn-choose" onclick="document.getElementById('fileInputPdf').click();return false;" data-i18n="drop_choose">Вибрати файли</label>
+                    <input type="file" id="fileInputPdf" accept="image/*" multiple hidden>
+                    <p class="drop-hint">JPG · PNG · WEBP — кілька файлів одночасно</p>
+                </div>
+                <div id="pdfFileList" class="pdf-file-list" hidden></div>
+                <div class="action-row" id="pdfActions" hidden>
+                    <button id="makePdfBtn" class="btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                        <span data-i18n="btn_make_pdf">Створити PDF</span>
+                    </button>
+                    <a hidden id="downloadPdfBtn" class="btn-download">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span data-i18n="btn_download">Завантажити PDF</span>
+                    </a>
+                </div>
+                <div class="progress-wrap" id="pdfProgress" hidden>
+                    <div class="progress-bar"><div class="progress-fill" id="pdfProgressFill"></div></div>
+                    <span class="progress-label" id="pdfProgressLabel">Генерація PDF...</span>
+                </div>
+            </div>
+
+            <!-- PDF → IMG (потребує PDF.js — coming soon в межах секції) -->
+            <div id="pdfToImgMode" hidden>
+                <div class="coming-soon" style="height:30vh">
+                    <div class="cs-icon" style="font-size:36px">🔧</div>
+                    <h2 data-i18n="pdf2img_soon_title">PDF → Фото</h2>
+                    <p data-i18n="pdf2img_soon_text">Потребує PDF.js. Буде готово в наступному оновленні!</p>
+                </div>
+            </div>
+
+            <!-- Hidden canvas for PDF generation -->
+            <canvas id="pdfCanvas" hidden></canvas>
+        </section>
+
+    </main>
+
+    <!-- TF.js + jsPDF -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="Script.js"></script>
+</body>
+</html>
