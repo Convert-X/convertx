@@ -890,10 +890,10 @@ var upscaleCanvas       = document.getElementById('upscaleCanvas');
 var methodTabs          = document.querySelectorAll('.method-tab');
 var aiNotice            = document.getElementById('aiNotice');
 
-var upscaleSourceImg  = null;
-var currentMethod     = 'lanczos';
+var upscaleSourceImg = null;
+var currentMethod    = 'lanczos';
 
-// Вибір методу
+// ── Вибір методу ──
 methodTabs.forEach(function(tab) {
     tab.addEventListener('click', function() {
         methodTabs.forEach(function(t) { t.classList.remove('active'); });
@@ -905,7 +905,7 @@ methodTabs.forEach(function(tab) {
     });
 });
 
-// Drag & drop
+// ── Drag & drop / вибір файлу ──
 setupDragDrop(dropZoneUpscale, fileInputUpscale, function(file) {
     var reader = new FileReader();
     reader.onload = function(e) {
@@ -916,6 +916,12 @@ setupDragDrop(dropZoneUpscale, fileInputUpscale, function(file) {
             upscaleControls.hidden = false;
             downloadUpscaleBtn.hidden = true;
             upscaleCompare.hidden = true;
+
+            // Показуємо назву файлу в drop zone
+            var nameEl = dropZoneUpscale.querySelector('.drop-main');
+            if (nameEl) nameEl.textContent = file.name;
+            dropZoneUpscale.style.borderColor = 'var(--accent)';
+
             updateSizePreview();
         };
         img.src = e.target.result;
@@ -923,7 +929,6 @@ setupDragDrop(dropZoneUpscale, fileInputUpscale, function(file) {
     reader.readAsDataURL(file);
 });
 
-// Оновити preview розміру
 function updateSizePreview() {
     if (!upscaleSourceImg) return;
     var scale = parseInt(scaleSelect.value);
@@ -932,130 +937,124 @@ function updateSizePreview() {
     origSizeEl.textContent = ow + '×' + oh;
     newSizeEl.textContent  = (ow * scale) + '×' + (oh * scale);
 }
-
 scaleSelect.addEventListener('change', updateSizePreview);
 
-// ── Кнопка "Збільшити" ──
+// ── Кнопка Upscale ──
 upscaleBtn.addEventListener('click', function() {
     if (!upscaleSourceImg) return;
-
     downloadUpscaleBtn.hidden = true;
     upscaleCompare.hidden = true;
     upscaleProgress.hidden = false;
-    upscaleProgressFill.style.width = '0%';
+    setProgress(0, '...');
     upscaleBtn.disabled = true;
 
     if (currentMethod === 'lanczos') {
-        runLanczos();
+        setTimeout(runLanczos, 30);
     } else {
-        runAI();
+        setTimeout(runAI, 30);
     }
 });
 
-// ────────────────────────────────────────────────
-// LANCZOS реалізація
-// ────────────────────────────────────────────────
-function runLanczos() {
-    var scale  = parseInt(scaleSelect.value);
-    var srcW   = upscaleSourceImg.naturalWidth;
-    var srcH   = upscaleSourceImg.naturalHeight;
-    var dstW   = srcW * scale;
-    var dstH   = srcH * scale;
-
-    upscaleProgressLabel.textContent = 'Lanczos інтерполяція...';
-    upscaleProgressFill.style.width = '20%';
-
-    // Спочатку малюємо оригінал на temp canvas
-    var srcCanvas = document.createElement('canvas');
-    srcCanvas.width  = srcW;
-    srcCanvas.height = srcH;
-    var srcCtx = srcCanvas.getContext('2d');
-    srcCtx.drawImage(upscaleSourceImg, 0, 0);
-    var srcData = srcCtx.getImageData(0, 0, srcW, srcH).data;
-
-    upscaleProgressFill.style.width = '40%';
-    upscaleProgressLabel.textContent = 'Обчислення пікселів...';
-
-    // Виконуємо в setTimeout щоб браузер не завис
-    setTimeout(function() {
-        upscaleCanvas.width  = dstW;
-        upscaleCanvas.height = dstH;
-        var dstCtx  = upscaleCanvas.getContext('2d');
-        var dstData = dstCtx.createImageData(dstW, dstH);
-        var dst     = dstData.data;
-
-        var LOBES = 3; // Lanczos-3
-
-        function lanczosKernel(x) {
-            if (x === 0) return 1;
-            if (Math.abs(x) >= LOBES) return 0;
-            var px = Math.PI * x;
-            return (LOBES * Math.sin(px) * Math.sin(px / LOBES)) / (px * px);
-        }
-
-        for (var dy = 0; dy < dstH; dy++) {
-            var fy = dy / scale;
-            var y0 = Math.floor(fy) - LOBES + 1;
-
-            for (var dx = 0; dx < dstW; dx++) {
-                var fx = dx / scale;
-                var x0 = Math.floor(fx) - LOBES + 1;
-
-                var r = 0, g = 0, b = 0, a = 0, wSum = 0;
-
-                for (var ky = y0; ky <= y0 + 2 * LOBES - 1; ky++) {
-                    var wy = lanczosKernel(fy - ky);
-                    var sy = Math.min(Math.max(ky, 0), srcH - 1);
-
-                    for (var kx = x0; kx <= x0 + 2 * LOBES - 1; kx++) {
-                        var wx  = lanczosKernel(fx - kx);
-                        var w   = wx * wy;
-                        var sx  = Math.min(Math.max(kx, 0), srcW - 1);
-                        var idx = (sy * srcW + sx) * 4;
-
-                        r += srcData[idx]     * w;
-                        g += srcData[idx + 1] * w;
-                        b += srcData[idx + 2] * w;
-                        a += srcData[idx + 3] * w;
-                        wSum += w;
-                    }
-                }
-
-                var di = (dy * dstW + dx) * 4;
-                dst[di]     = Math.min(255, Math.max(0, Math.round(r / wSum)));
-                dst[di + 1] = Math.min(255, Math.max(0, Math.round(g / wSum)));
-                dst[di + 2] = Math.min(255, Math.max(0, Math.round(b / wSum)));
-                dst[di + 3] = Math.min(255, Math.max(0, Math.round(a / wSum)));
-            }
-
-            // Оновлюємо прогрес кожні 20 рядків
-            if (dy % 20 === 0) {
-                var pct = 40 + Math.round((dy / dstH) * 55);
-                upscaleProgressFill.style.width = pct + '%';
-            }
-        }
-
-        dstCtx.putImageData(dstData, 0, 0);
-        finishUpscale('lanczos_' + scale + 'x');
-    }, 50);
+function setProgress(pct, label) {
+    upscaleProgressFill.style.width = pct + '%';
+    if (label) upscaleProgressLabel.textContent = label;
 }
 
-// ────────────────────────────────────────────────
-// AI UPSCALE через TensorFlow.js (bicubic як fallback якщо модель не завантажилась)
-// Real-ESRGAN потребує WASM/ONNX, тут використовуємо TF.js tensor resizing
-// ────────────────────────────────────────────────
-function runAI() {
-    upscaleProgressLabel.textContent = 'Завантаження TensorFlow...';
-    upscaleProgressFill.style.width = '10%';
+// ══════════════════════════════════════════
+// LANCZOS — чанкована обробка (не блокує UI)
+// ══════════════════════════════════════════
+function runLanczos() {
+    var scale = parseInt(scaleSelect.value);
+    var srcW  = upscaleSourceImg.naturalWidth;
+    var srcH  = upscaleSourceImg.naturalHeight;
+    var dstW  = srcW * scale;
+    var dstH  = srcH * scale;
 
-    if (typeof tf === 'undefined') {
-        upscaleProgressLabel.textContent = 'TF.js не завантажено, використовую Lanczos...';
-        setTimeout(runLanczos, 300);
+    // Обмеження для мобілки
+    if (dstW * dstH > 16000000) {
+        setProgress(0, 'Зображення задто велике для Lanczos, спробуй x2');
+        upscaleBtn.disabled = false;
         return;
     }
 
-    upscaleProgressLabel.textContent = 'Обробка через TF.js...';
-    upscaleProgressFill.style.width = '30%';
+    setProgress(10, 'Зчитування пікселів...');
+
+    var srcCanvas = document.createElement('canvas');
+    srcCanvas.width = srcW; srcCanvas.height = srcH;
+    srcCanvas.getContext('2d').drawImage(upscaleSourceImg, 0, 0);
+    var srcData = srcCanvas.getContext('2d').getImageData(0, 0, srcW, srcH).data;
+
+    upscaleCanvas.width = dstW;
+    upscaleCanvas.height = dstH;
+    var dstCtx  = upscaleCanvas.getContext('2d');
+    var dstData = dstCtx.createImageData(dstW, dstH);
+    var dst     = dstData.data;
+
+    var LOBES = 2; // Lanczos-2 — швидше ніж 3, якість майже та сама
+    function kernel(x) {
+        if (x === 0) return 1;
+        if (Math.abs(x) >= LOBES) return 0;
+        var px = Math.PI * x;
+        return (LOBES * Math.sin(px) * Math.sin(px / LOBES)) / (px * px);
+    }
+
+    var CHUNK = 40; // рядків за кадр
+    var dy = 0;
+
+    function processChunk() {
+        var end = Math.min(dy + CHUNK, dstH);
+        for (; dy < end; dy++) {
+            var fy = dy / scale;
+            var y0 = Math.floor(fy) - LOBES + 1;
+            for (var dx = 0; dx < dstW; dx++) {
+                var fx = dx / scale;
+                var x0 = Math.floor(fx) - LOBES + 1;
+                var r=0, g=0, b=0, a=0, wSum=0;
+                for (var ky = y0; ky < y0 + 2*LOBES; ky++) {
+                    var wy = kernel(fy - ky);
+                    var sy = Math.min(Math.max(ky, 0), srcH-1);
+                    for (var kx = x0; kx < x0 + 2*LOBES; kx++) {
+                        var w  = kernel(fx - kx) * wy;
+                        var sx = Math.min(Math.max(kx, 0), srcW-1);
+                        var i  = (sy * srcW + sx) * 4;
+                        r += srcData[i]   * w;
+                        g += srcData[i+1] * w;
+                        b += srcData[i+2] * w;
+                        a += srcData[i+3] * w;
+                        wSum += w;
+                    }
+                }
+                var di = (dy * dstW + dx) * 4;
+                dst[di]   = Math.min(255, Math.max(0, r/wSum|0));
+                dst[di+1] = Math.min(255, Math.max(0, g/wSum|0));
+                dst[di+2] = Math.min(255, Math.max(0, b/wSum|0));
+                dst[di+3] = Math.min(255, Math.max(0, a/wSum|0));
+            }
+        }
+
+        var pct = 10 + Math.round((dy / dstH) * 85);
+        setProgress(pct, 'Lanczos: ' + Math.round(dy/dstH*100) + '%');
+
+        if (dy < dstH) {
+            requestAnimationFrame(processChunk);
+        } else {
+            dstCtx.putImageData(dstData, 0, 0);
+            finishUpscale('lanczos_' + scale + 'x');
+        }
+    }
+
+    requestAnimationFrame(processChunk);
+}
+
+// ══════════════════════════════════════════
+// AI — TF.js bicubic (справжній bicubic)
+// ══════════════════════════════════════════
+function runAI() {
+    if (typeof tf === 'undefined') {
+        setProgress(5, 'TF.js не завантажено, переключаю на Lanczos...');
+        setTimeout(runLanczos, 500);
+        return;
+    }
 
     var scale = parseInt(scaleSelect.value);
     var srcW  = upscaleSourceImg.naturalWidth;
@@ -1063,69 +1062,82 @@ function runAI() {
     var dstW  = srcW * scale;
     var dstH  = srcH * scale;
 
-    // Попередження для великих зображень
-    if (srcW * srcH > 1500 * 1500) {
-        upscaleProgressLabel.textContent = 'Велике зображення — може зайняти хвилину...';
+    setProgress(15, 'Підготовка тензору...');
+
+    // Обмеження — TF.js на мобілці їсть пам\'ять
+    if (srcW * srcH > 2000 * 2000) {
+        setProgress(0, 'Зображення задто велике для AI, використовую Lanczos');
+        upscaleBtn.disabled = false;
+        setTimeout(runLanczos, 500);
+        return;
     }
 
-    tf.tidy(function() {
-        try {
-            // Зчитати пікселі з canvas
-            var srcCanvas = document.createElement('canvas');
-            srcCanvas.width  = srcW;
-            srcCanvas.height = srcH;
-            var srcCtx = srcCanvas.getContext('2d');
-            srcCtx.drawImage(upscaleSourceImg, 0, 0);
+    try {
+        tf.engine().startScope();
 
-            upscaleProgressFill.style.width = '50%';
+        var srcCanvas = document.createElement('canvas');
+        srcCanvas.width = srcW; srcCanvas.height = srcH;
+        srcCanvas.getContext('2d').drawImage(upscaleSourceImg, 0, 0);
 
-            // Перетворити в тензор і зробити bicubic upscale через TF.js
-            var tensor = tf.browser.fromPixels(srcCanvas);
-            var expanded = tensor.expandDims(0).toFloat();
+        setProgress(35, 'TF.js bicubic обробка...');
 
-            // TF.js image resizeBicubic — це справжній bicubic (якісніше за canvas)
-            var resized = tf.image.resizeBicubic(expanded, [dstH, dstW], true);
+        var tensor   = tf.browser.fromPixels(srcCanvas);
+        var expanded = tensor.expandDims(0).toFloat();
+        var resized  = tf.image.resizeBicubic(expanded, [dstH, dstW], true);
 
-            upscaleProgressFill.style.width = '75%';
-            upscaleProgressLabel.textContent = 'Запис результату...';
+        upscaleCanvas.width  = dstW;
+        upscaleCanvas.height = dstH;
 
-            // Записати назад у canvas
-            upscaleCanvas.width  = dstW;
-            upscaleCanvas.height = dstH;
-            var dstCtx = upscaleCanvas.getContext('2d');
+        setProgress(75, 'Запис результату...');
 
-            var squeezed = resized.squeeze().toInt();
-            tf.browser.toPixels(squeezed, upscaleCanvas).then(function() {
-                finishUpscale('ai_bicubic_' + scale + 'x');
-            });
+        var squeezed = resized.squeeze().toInt();
+        tf.browser.toPixels(squeezed, upscaleCanvas).then(function() {
+            tf.engine().endScope();
+            finishUpscale('ai_bicubic_' + scale + 'x');
+        }).catch(function(err) {
+            tf.engine().endScope();
+            setProgress(0, 'Помилка AI, переключаю на Lanczos...');
+            setTimeout(runLanczos, 500);
+        });
 
-        } catch (err) {
-            console.error('TF upscale error:', err);
-            upscaleProgressLabel.textContent = 'Помилка TF.js, використовую Lanczos...';
-            setTimeout(runLanczos, 300);
-        }
-    });
+    } catch(err) {
+        setProgress(0, 'Помилка AI, переключаю на Lanczos...');
+        setTimeout(runLanczos, 500);
+    }
 }
 
-// ── Спільне завершення ──
+// ── Завершення ──
 function finishUpscale(suffix) {
-    upscaleProgressFill.style.width = '100%';
-    upscaleProgressLabel.textContent = 'Готово!';
+    setProgress(100, '✓ Готово!');
 
     var dataURL = upscaleCanvas.toDataURL('image/png');
     upscaleResultImg.src = dataURL;
-    upscaleCompare.hidden = false;
-    initBASlider(); // запускаємо слайдер після показу
+
+    // BA слайдер — показуємо після завантаження обох зображень
+    var loaded = 0;
+    function onImgLoad() {
+        loaded++;
+        if (loaded >= 1) {
+            upscaleCompare.hidden = false;
+            requestAnimationFrame(function() {
+                requestAnimationFrame(initBASlider);
+            });
+        }
+    }
+    upscaleResultImg.onload = onImgLoad;
+    if (upscaleResultImg.complete) onImgLoad();
 
     var blob = dataURItoBlob(dataURL);
     var url  = URL.createObjectURL(blob);
     downloadUpscaleBtn.href     = url;
     downloadUpscaleBtn.download = 'upscaled_' + suffix + '.png';
     downloadUpscaleBtn.hidden   = false;
-
     upscaleBtn.disabled = false;
 
-    setTimeout(function() { upscaleProgress.hidden = true; }, 1500);
+    setTimeout(function() {
+        upscaleProgress.hidden = true;
+        setProgress(0, '');
+    }, 2000);
 }
 
 // ══════════════════════════════════════
@@ -1135,50 +1147,50 @@ function initBASlider() {
     var slider     = document.getElementById('baSlider');
     var beforeWrap = document.getElementById('baBeforeWrap');
     var handle     = document.getElementById('baHandle');
-    if (!slider) return;
+    var beforeImg  = document.getElementById('upscaleOrigImg');
+    if (!slider || !beforeWrap) return;
 
-    // Встановлюємо розмір before-wrap рівний розміру after-img
-    var afterImg = document.getElementById('upscaleResultImg');
-    var beforeImg = document.getElementById('upscaleOrigImg');
-
-    // Синхронізуємо розмір before-img з after-img після завантаження
+    // Встановлюємо початкову позицію 50%
     function syncSize() {
-        var w = slider.offsetWidth;
-        beforeWrap.style.width = (w * 0.5) + 'px';
+        var w = slider.getBoundingClientRect().width || slider.offsetWidth;
+        beforeWrap.style.width = '50%';
         beforeImg.style.width  = w + 'px';
-        handle.style.left      = '50%';
+        beforeImg.style.maxWidth = 'none';
+        handle.style.left = '50%';
     }
+    syncSize();
+    window.addEventListener('resize', syncSize);
 
-    afterImg.onload = syncSize;
-    // Якщо вже завантажено
-    if (afterImg.complete) syncSize();
-
-    function setPos(x) {
+    function setPos(clientX) {
         var rect = slider.getBoundingClientRect();
-        var pct  = Math.min(Math.max((x - rect.left) / rect.width, 0.02), 0.98);
+        var pct  = Math.min(Math.max((clientX - rect.left) / rect.width, 0.02), 0.98);
+        var w    = rect.width;
         beforeWrap.style.width = (pct * 100) + '%';
-        beforeImg.style.width  = slider.offsetWidth + 'px';
+        beforeImg.style.width  = w + 'px';
+        beforeImg.style.maxWidth = 'none';
         handle.style.left      = (pct * 100) + '%';
     }
 
     // Mouse
+    var dragging = false;
     slider.addEventListener('mousedown', function(e) {
         e.preventDefault();
+        dragging = true;
         setPos(e.clientX);
-        function onMove(e) { setPos(e.clientX); }
-        function onUp()    { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup',   onUp);
     });
+    document.addEventListener('mousemove', function(e) {
+        if (dragging) setPos(e.clientX);
+    });
+    document.addEventListener('mouseup', function() { dragging = false; });
 
     // Touch
     slider.addEventListener('touchstart', function(e) {
         e.preventDefault();
         setPos(e.touches[0].clientX);
-        function onMove(e) { setPos(e.touches[0].clientX); }
-        function onEnd()   { slider.removeEventListener('touchmove', onMove); slider.removeEventListener('touchend', onEnd); }
-        slider.addEventListener('touchmove', onMove, { passive: false });
-        slider.addEventListener('touchend',  onEnd);
+    }, { passive: false });
+    slider.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+        setPos(e.touches[0].clientX);
     }, { passive: false });
 }
 
