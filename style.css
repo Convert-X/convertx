@@ -293,6 +293,32 @@ body {
     border-style: solid;
 }
 
+/* Файл завантажено — зелена рамка */
+.drop-zone.has-file {
+    border-color: var(--green);
+    border-style: solid;
+    background: rgba(39,174,96,0.06);
+    padding: 16px 24px;
+}
+.drop-zone.has-file .drop-animation { display: none; }
+.drop-zone.has-file .drop-or        { display: none; }
+.drop-zone.has-file .drop-hint      { display: none; }
+.drop-zone.has-file .drop-hint-img  { display: none; }
+.drop-zone.has-file .drop-main {
+    font-size: 13px;
+    color: var(--green);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.drop-zone.has-file .btn-choose {
+    font-size: 12px;
+    padding: 4px 12px;
+    opacity: 0.7;
+}
+
 .drop-animation {
     margin-bottom: 8px;
     color: var(--text-muted);
@@ -961,8 +987,77 @@ body {
 }
 
 /* ══════════════════════════════
-   BEFORE / AFTER SLIDER
+   BA MODAL OVERLAY
    ══════════════════════════════ */
+.ba-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: rgba(10,8,4,0.88);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 0.2s ease;
+}
+.ba-modal[hidden] { display: none !important; }
+
+.ba-modal-inner {
+    width: 100%;
+    max-width: 900px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+.ba-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.ba-modal-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+}
+.ba-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s, background 0.15s;
+}
+.ba-modal-close:hover {
+    color: var(--text);
+    background: var(--surface2);
+}
+
+/* BA slider всередині модалу */
+.ba-modal .ba-slider {
+    flex: 1;
+    border-radius: 0;
+    cursor: col-resize;
+}
+.ba-modal .ba-img {
+    max-height: calc(90vh - 60px);
+    width: 100%;
+    object-fit: contain;
+}
+
+
 .ba-wrap {
     margin-top: 24px;
     border-radius: 12px;
@@ -975,11 +1070,11 @@ body {
     position: relative;
     width: 100%;
     user-select: none;
-    touch-action: pan-y;
+    touch-action: none;
     cursor: col-resize;
     line-height: 0;
-    /* Checkerboard bg */
     background: repeating-conic-gradient(#1c1610 0% 25%, #221a10 0% 50%) 0 0 / 20px 20px;
+    overflow: hidden;
 }
 
 .ba-img {
@@ -989,18 +1084,20 @@ body {
     object-fit: contain;
 }
 
-/* Before image — обрізається справа через clip */
+/* Before — абсолютно, обрізається clip-path */
 .ba-before-wrap {
     position: absolute;
     inset: 0;
-    overflow: hidden;
-    width: 50%; /* керується JS */
+    clip-path: inset(0 50% 0 0); /* керується JS через style */
+    overflow: visible;
 }
 .ba-before-wrap .ba-img {
     position: absolute;
-    inset: 0;
-    width: 100vw; /* займає повну ширину батьківського ba-slider */
-    max-width: none;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    max-height: none;
 }
 
 /* Вертикальна лінія + кружок */
@@ -1014,12 +1111,13 @@ body {
     align-items: center;
     pointer-events: none;
     z-index: 10;
+    width: 2px;
 }
 .ba-line {
     width: 2px;
     flex: 1;
-    background: rgba(255,255,255,0.85);
-    box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 0 6px rgba(0,0,0,0.6);
 }
 .ba-circle {
     position: absolute;
@@ -1029,22 +1127,23 @@ body {
     height: 40px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.45);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0;
     color: #333;
     flex-shrink: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 .ba-circle svg { flex-shrink: 0; }
 
-/* Підписи Before / After */
+/* Підписи */
 .ba-label {
     position: absolute;
     top: 12px;
     padding: 3px 10px;
-    background: rgba(0,0,0,0.55);
+    background: rgba(0,0,0,0.6);
     color: #fff;
     font-size: 11px;
     font-weight: 600;

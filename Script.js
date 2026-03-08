@@ -56,6 +56,7 @@ var TRANSLATIONS = {
         btn_upscale:    'Upscale',
         compare_before: 'Before',
         compare_after:  'After',
+        btn_compare:    'Compare Before / After',
         // Compress
         compress_title:      'File <span class="accent">Compression</span>',
         compress_desc:       'Reduce image size without noticeable quality loss',
@@ -124,6 +125,7 @@ var TRANSLATIONS = {
         btn_upscale:    'Збільшити',
         compare_before: 'До',
         compare_after:  'Після',
+        btn_compare:    'Порівняти До / Після',
         // Compress
         compress_title:      'Стиснення <span class="accent">файлів</span>',
         compress_desc:       'Зменшуй розмір зображень без помітної втрати якості',
@@ -192,6 +194,7 @@ var TRANSLATIONS = {
         btn_upscale:    'Hochskalieren',
         compare_before: 'Vorher',
         compare_after:  'Nachher',
+        btn_compare:    'Vorher / Nachher vergleichen',
         // Compress
         compress_title:      'Datei <span class="accent">komprimieren</span>',
         compress_desc:       'Bildgröße ohne merklichen Qualitätsverlust reduzieren',
@@ -911,23 +914,58 @@ setupDragDrop(dropZoneUpscale, fileInputUpscale, function(file) {
     reader.onload = function(e) {
         var img = new Image();
         img.onload = function() {
-            upscaleSourceImg = img;
-            upscaleOrigImg.src = e.target.result;
-            upscaleControls.hidden = false;
-            downloadUpscaleBtn.hidden = true;
-            upscaleCompare.hidden = true;
+            // ── Фікс пам'яті: стискаємо якщо > 2000px по будь-якій стороні ──
+            var MAX_SIDE = 2000;
+            var srcW = img.naturalWidth;
+            var srcH = img.naturalHeight;
 
-            // Показуємо назву файлу в drop zone
-            var nameEl = dropZoneUpscale.querySelector('.drop-main');
-            if (nameEl) nameEl.textContent = file.name;
-            dropZoneUpscale.style.borderColor = 'var(--accent)';
+            if (srcW > MAX_SIDE || srcH > MAX_SIDE) {
+                var ratio = Math.min(MAX_SIDE / srcW, MAX_SIDE / srcH);
+                var newW  = Math.round(srcW * ratio);
+                var newH  = Math.round(srcH * ratio);
+                var tmp   = document.createElement('canvas');
+                tmp.width = newW; tmp.height = newH;
+                tmp.getContext('2d').drawImage(img, 0, 0, newW, newH);
+                var resizedUrl = tmp.toDataURL('image/jpeg', 0.92);
+                var resized = new Image();
+                resized.onload = function() {
+                    upscaleSourceImg = resized;
+                    upscaleOrigImg.src = resizedUrl;
+                    finishLoad(newW + '×' + newH + ' (стиснено)');
+                };
+                resized.src = resizedUrl;
+            } else {
+                upscaleSourceImg = img;
+                upscaleOrigImg.src = e.target.result;
+                finishLoad(srcW + '×' + srcH);
+            }
 
-            updateSizePreview();
+            function finishLoad(sizeInfo) {
+                upscaleControls.hidden = false;
+                downloadUpscaleBtn.hidden = true;
+                upscaleCompare.hidden = true;
+                var nameEl = dropZoneUpscale.querySelector('.drop-main');
+                if (nameEl) nameEl.textContent = '✓ ' + file.name + '  (' + sizeInfo + ')';
+                dropZoneUpscale.classList.add('has-file');
+                updateSizePreview();
+            }
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 });
+
+// ── Модал BA ──
+var baModal    = document.getElementById('baModal');
+var openBABtn  = document.getElementById('openBAModal');
+var closeBABtn = document.getElementById('closeBAModal');
+
+if (openBABtn)  openBABtn.addEventListener('click',  function() { baModal.hidden = false; initBASlider(); });
+if (closeBABtn) closeBABtn.addEventListener('click', function() { baModal.hidden = true; });
+baModal && baModal.addEventListener('click', function(e) { if (e.target === baModal) baModal.hidden = true; });
+// Закриття на Escape
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && baModal && !baModal.hidden) baModal.hidden = true; });
+
 
 function updateSizePreview() {
     if (!upscaleSourceImg) return;
@@ -1113,19 +1151,8 @@ function finishUpscale(suffix) {
     var dataURL = upscaleCanvas.toDataURL('image/png');
     upscaleResultImg.src = dataURL;
 
-    // BA слайдер — показуємо після завантаження обох зображень
-    var loaded = 0;
-    function onImgLoad() {
-        loaded++;
-        if (loaded >= 1) {
-            upscaleCompare.hidden = false;
-            requestAnimationFrame(function() {
-                requestAnimationFrame(initBASlider);
-            });
-        }
-    }
-    upscaleResultImg.onload = onImgLoad;
-    if (upscaleResultImg.complete) onImgLoad();
+    // Показуємо кнопку "Порівняти"
+    upscaleCompare.hidden = false;
 
     var blob = dataURItoBlob(dataURL);
     var url  = URL.createObjectURL(blob);
@@ -1147,50 +1174,38 @@ function initBASlider() {
     var slider     = document.getElementById('baSlider');
     var beforeWrap = document.getElementById('baBeforeWrap');
     var handle     = document.getElementById('baHandle');
-    var beforeImg  = document.getElementById('upscaleOrigImg');
-    if (!slider || !beforeWrap) return;
+    if (!slider || !beforeWrap || !handle) return;
 
-    // Встановлюємо початкову позицію 50%
-    function syncSize() {
-        var w = slider.getBoundingClientRect().width || slider.offsetWidth;
-        beforeWrap.style.width = '50%';
-        beforeImg.style.width  = w + 'px';
-        beforeImg.style.maxWidth = 'none';
-        handle.style.left = '50%';
+    function applyPos(pct) {
+        pct = Math.min(Math.max(pct, 2), 98);
+        beforeWrap.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+        handle.style.left = pct + '%';
     }
-    syncSize();
-    window.addEventListener('resize', syncSize);
+    applyPos(50);
 
-    function setPos(clientX) {
+    function getPct(clientX) {
         var rect = slider.getBoundingClientRect();
-        var pct  = Math.min(Math.max((clientX - rect.left) / rect.width, 0.02), 0.98);
-        var w    = rect.width;
-        beforeWrap.style.width = (pct * 100) + '%';
-        beforeImg.style.width  = w + 'px';
-        beforeImg.style.maxWidth = 'none';
-        handle.style.left      = (pct * 100) + '%';
+        return (clientX - rect.left) / rect.width * 100;
     }
 
-    // Mouse
     var dragging = false;
     slider.addEventListener('mousedown', function(e) {
         e.preventDefault();
         dragging = true;
-        setPos(e.clientX);
+        applyPos(getPct(e.clientX));
     });
     document.addEventListener('mousemove', function(e) {
-        if (dragging) setPos(e.clientX);
+        if (dragging) applyPos(getPct(e.clientX));
     });
     document.addEventListener('mouseup', function() { dragging = false; });
 
-    // Touch
     slider.addEventListener('touchstart', function(e) {
         e.preventDefault();
-        setPos(e.touches[0].clientX);
+        applyPos(getPct(e.touches[0].clientX));
     }, { passive: false });
     slider.addEventListener('touchmove', function(e) {
         e.preventDefault();
-        setPos(e.touches[0].clientX);
+        applyPos(getPct(e.touches[0].clientX));
     }, { passive: false });
 }
 
