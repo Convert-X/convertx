@@ -1149,7 +1149,7 @@ function runAI() {
 
         setProgress(75, 'Запис результату...');
 
-        var squeezed = resized.squeeze().toInt();
+        var squeezed = resized.squeeze().clipByValue(0, 255).cast('int32');
         tf.browser.toPixels(squeezed, upscaleCanvas).then(function() {
             tf.engine().endScope();
             finishUpscale('ai_bicubic_' + scale + 'x');
@@ -1235,19 +1235,44 @@ function initBASlider() {
     }, { passive: false });
 }
 
-const closeBAModalBtn = document.getElementById('closeBAModal');
-// Заміни '#baModal' на фактичний ID або клас головної обгортки твого спливаючого вікна
-const baModalWrapper = document.getElementById('baModal'); 
+function initBASlider() {
+    var slider     = document.getElementById('baSlider');
+    var beforeWrap = document.getElementById('baBeforeWrap');
+    var handle     = document.getElementById('baHandle');
+    var closeBtn   = document.getElementById('closeBAModal');
+    var modal      = document.getElementById('baModal');
 
-if (closeBAModalBtn && baModalWrapper) {
-    // Використовуємо і click, і touchend для ідеальної роботи на мобільних і ПК
-    ['click', 'touchend'].forEach(evt => {
-        closeBAModalBtn.addEventListener(evt, function(e) {
-            e.preventDefault(); // Запобігає подвійному кліку на телефонах
-            baModalWrapper.style.display = 'none'; 
-            // Або baModalWrapper.classList.remove('active'); (залежно від того, як ти його показуєш)
-        }, { passive: false });
-    });
+    if (!slider || !beforeWrap || !handle) return;
+
+    // Закриття модалки (той самий хрестик)
+    if (closeBtn && modal) {
+        closeBtn.onclick = function() {
+            modal.hidden = true;
+        };
+    }
+
+    function applyPos(pct) {
+        pct = Math.min(Math.max(pct, 2), 98);
+        beforeWrap.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+        handle.style.left = pct + '%';
+    }
+    applyPos(50);
+
+    function getPct(clientX) {
+        var rect = slider.getBoundingClientRect();
+        return (clientX - rect.left) / rect.width * 100;
+    }
+
+    var dragging = false;
+    slider.onmousedown = function(e) { e.preventDefault(); dragging = true; applyPos(getPct(e.clientX)); };
+    document.onmousemove = function(e) { if (dragging) applyPos(getPct(e.clientX)); };
+    document.onmouseup = function() { dragging = false; };
+
+    // Для телефонів і планшетів
+    slider.ontouchstart = function(e) { dragging = true; applyPos(getPct(e.touches[0].clientX)); };
+    slider.ontouchmove = function(e) { if (dragging) applyPos(getPct(e.touches[0].clientX)); };
+    slider.ontouchend = function() { dragging = false; };
 }
+
 // ── ІНІЦІАЛІЗАЦІЯ МОВИ (після всіх translations) ─
 applyLang('en');

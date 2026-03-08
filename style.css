@@ -1524,3 +1524,13 @@ body {
     pointer-events: auto;
     cursor: pointer;
 }
+
+#closeBAModal {
+    z-index: 9999 !important;
+    cursor: pointer !important;
+    pointer-events: all !important;
+    padding: 10px; /* збільшуємо зону кліку для пальця */
+}
+.ba-modal {
+    z-index: 9998;
+}
