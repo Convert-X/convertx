@@ -733,6 +733,36 @@ body {
     gap: 12px;
 }
 
+/* ── BUY ME A COFFEE ── */
+.bmac-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    background: #FFDD00;
+    color: #000;
+    border-radius: 20px;
+    text-decoration: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 8px rgba(255,221,0,0.25);
+}
+.bmac-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(255,221,0,0.4);
+}
+.bmac-btn svg { flex-shrink: 0; }
+
+@media (max-width: 600px) {
+    .bmac-btn span { display: none; }
+    .bmac-btn { padding: 6px 8px; }
+}
+
+
+
 /* Language Switcher */
 .lang-switcher {
     position: relative;
