@@ -960,29 +960,104 @@ body {
     font-weight: 600;
 }
 
-.upscale-compare {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-top: 20px;
+/* ══════════════════════════════
+   BEFORE / AFTER SLIDER
+   ══════════════════════════════ */
+.ba-wrap {
+    margin-top: 24px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
     animation: fadeIn 0.3s ease;
 }
 
-.compare-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
+.ba-slider {
+    position: relative;
+    width: 100%;
+    user-select: none;
+    touch-action: pan-y;
+    cursor: col-resize;
+    line-height: 0;
+    /* Checkerboard bg */
+    background: repeating-conic-gradient(#1c1610 0% 25%, #221a10 0% 50%) 0 0 / 20px 20px;
 }
 
-.compare-box img {
-    width: 100%;
-    height: 220px;
-    object-fit: contain;
-    padding: 10px;
-    background: repeating-conic-gradient(#1c1610 0% 25%, #221a10 0% 50%) 0 0 / 20px 20px;
+.ba-img {
     display: block;
+    width: 100%;
+    max-height: 480px;
+    object-fit: contain;
 }
+
+/* Before image — обрізається справа через clip */
+.ba-before-wrap {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    width: 50%; /* керується JS */
+}
+.ba-before-wrap .ba-img {
+    position: absolute;
+    inset: 0;
+    width: 100vw; /* займає повну ширину батьківського ba-slider */
+    max-width: none;
+}
+
+/* Вертикальна лінія + кружок */
+.ba-handle {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 10;
+}
+.ba-line {
+    width: 2px;
+    flex: 1;
+    background: rgba(255,255,255,0.85);
+    box-shadow: 0 0 8px rgba(0,0,0,0.5);
+}
+.ba-circle {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    color: #333;
+    flex-shrink: 0;
+}
+.ba-circle svg { flex-shrink: 0; }
+
+/* Підписи Before / After */
+.ba-label {
+    position: absolute;
+    top: 12px;
+    padding: 3px 10px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    line-height: 1.4;
+    pointer-events: none;
+    z-index: 5;
+}
+.ba-label-before { left: 12px; }
+.ba-label-after  { right: 12px; }
+
 
 /* ── PRIVACY BADGE ── */
 .privacy-badge {
@@ -1266,73 +1341,50 @@ body {
         transition: transform 0.3s cubic-bezier(.4,0,.2,1);
         z-index: 150;
     }
-
-    #sidebar.open {
-        transform: translateX(0);
-    }
-
-    #sidebar-overlay.open {
-        display: block;
-    }
-
+    #sidebar.open { transform: translateX(0); }
+    #sidebar-overlay.open { display: block; }
     #sidebar-divider { display: none; }
 
     #topbar {
         left: 0;
         padding-left: 60px;
+        padding-right: 16px;
     }
 
     #main {
         margin-left: 0;
         padding-top: 52px;
+        -webkit-mask-image: none;
+        mask-image: none;
     }
 
-    .section {
-        padding: 24px 16px;
-    }
+    .section { padding: 24px 16px; }
+    .section-header h1 { font-size: 24px; }
 
-    .controls-grid {
-        grid-template-columns: 1fr;
-    }
+    .controls-grid { grid-template-columns: 1fr; }
+    .enhance-workspace { grid-template-columns: 1fr; }
+    .method-tabs { flex-direction: column; }
+    .pdf-modes { flex-direction: column; }
 
-    .enhance-workspace {
-        grid-template-columns: 1fr;
-    }
-
-    .method-tabs {
-        flex-direction: column;
-    }
-
-    .pdf-modes {
-        flex-direction: column;
-    }
-
-    .upscale-compare {
-        grid-template-columns: 1fr;
-    }
-
-    .action-row {
-        flex-direction: column;
-    }
-
+    .action-row { flex-direction: column; }
     .btn-primary, .btn-download, .btn-secondary {
         width: 100%;
         justify-content: center;
     }
 
-    .section-header h1 {
-        font-size: 24px;
-    }
+    /* Enhance preview менший на мобілці */
+    #previewImg { height: 200px; }
 
-    #previewImg {
-        height: 200px;
-    }
+    /* BA slider на мобілці */
+    .ba-img { max-height: 320px; }
 }
 
 @media (max-width: 480px) {
     .section { padding: 20px 12px; }
     .drop-zone { padding: 28px 16px; }
     .logo-text { font-size: 16px; }
+    .ba-img { max-height: 260px; }
+    .ba-circle { width: 34px; height: 34px; }
 }
 
 /* ── SCROLLBAR ── */

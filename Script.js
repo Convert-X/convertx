@@ -1115,6 +1115,7 @@ function finishUpscale(suffix) {
     var dataURL = upscaleCanvas.toDataURL('image/png');
     upscaleResultImg.src = dataURL;
     upscaleCompare.hidden = false;
+    initBASlider(); // запускаємо слайдер після показу
 
     var blob = dataURItoBlob(dataURL);
     var url  = URL.createObjectURL(blob);
@@ -1125,6 +1126,60 @@ function finishUpscale(suffix) {
     upscaleBtn.disabled = false;
 
     setTimeout(function() { upscaleProgress.hidden = true; }, 1500);
+}
+
+// ══════════════════════════════════════
+// BEFORE / AFTER SLIDER
+// ══════════════════════════════════════
+function initBASlider() {
+    var slider     = document.getElementById('baSlider');
+    var beforeWrap = document.getElementById('baBeforeWrap');
+    var handle     = document.getElementById('baHandle');
+    if (!slider) return;
+
+    // Встановлюємо розмір before-wrap рівний розміру after-img
+    var afterImg = document.getElementById('upscaleResultImg');
+    var beforeImg = document.getElementById('upscaleOrigImg');
+
+    // Синхронізуємо розмір before-img з after-img після завантаження
+    function syncSize() {
+        var w = slider.offsetWidth;
+        beforeWrap.style.width = (w * 0.5) + 'px';
+        beforeImg.style.width  = w + 'px';
+        handle.style.left      = '50%';
+    }
+
+    afterImg.onload = syncSize;
+    // Якщо вже завантажено
+    if (afterImg.complete) syncSize();
+
+    function setPos(x) {
+        var rect = slider.getBoundingClientRect();
+        var pct  = Math.min(Math.max((x - rect.left) / rect.width, 0.02), 0.98);
+        beforeWrap.style.width = (pct * 100) + '%';
+        beforeImg.style.width  = slider.offsetWidth + 'px';
+        handle.style.left      = (pct * 100) + '%';
+    }
+
+    // Mouse
+    slider.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        setPos(e.clientX);
+        function onMove(e) { setPos(e.clientX); }
+        function onUp()    { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onUp);
+    });
+
+    // Touch
+    slider.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        setPos(e.touches[0].clientX);
+        function onMove(e) { setPos(e.touches[0].clientX); }
+        function onEnd()   { slider.removeEventListener('touchmove', onMove); slider.removeEventListener('touchend', onEnd); }
+        slider.addEventListener('touchmove', onMove, { passive: false });
+        slider.addEventListener('touchend',  onEnd);
+    }, { passive: false });
 }
 
 // ── ІНІЦІАЛІЗАЦІЯ МОВИ (після всіх translations) ─
