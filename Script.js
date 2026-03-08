@@ -1235,5 +1235,19 @@ function initBASlider() {
     }, { passive: false });
 }
 
+const closeBAModalBtn = document.getElementById('closeBAModal');
+// Заміни '#baModal' на фактичний ID або клас головної обгортки твого спливаючого вікна
+const baModalWrapper = document.getElementById('baModal'); 
+
+if (closeBAModalBtn && baModalWrapper) {
+    // Використовуємо і click, і touchend для ідеальної роботи на мобільних і ПК
+    ['click', 'touchend'].forEach(evt => {
+        closeBAModalBtn.addEventListener(evt, function(e) {
+            e.preventDefault(); // Запобігає подвійному кліку на телефонах
+            baModalWrapper.style.display = 'none'; 
+            // Або baModalWrapper.classList.remove('active'); (залежно від того, як ти його показуєш)
+        }, { passive: false });
+    });
+}
 // ── ІНІЦІАЛІЗАЦІЯ МОВИ (після всіх translations) ─
 applyLang('en');

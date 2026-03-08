@@ -1517,3 +1517,10 @@ body {
     #sidebar-divider { margin-left: 60px; }
     #main { margin-left: 61px; }
 }
+
+
+#closeBAModal {
+    z-index: 9999;
+    pointer-events: auto;
+    cursor: pointer;
+}
