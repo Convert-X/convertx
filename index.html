@@ -234,8 +234,8 @@
                 </div>
                 <p class="drop-main" data-i18n="drop_main">Перетягни файл сюди</p>
                 <p class="drop-or" data-i18n="drop_or">або</p>
-                <label class="btn-choose" data-i18n="drop_choose" onclick="document.getElementById('fileInput').click(); return false;">Вибрати файл</label>
-                <input type="file" id="fileInput" accept="image/*" hidden>
+                <label for="fileInput" class="btn-choose" data-i18n="drop_choose">Choose file</label>
+                <input type="file" id="fileInput" accept="image/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
                 <p class="drop-hint" data-i18n="drop_hint_img">JPG · PNG · WEBP · GIF · до 50MB</p>
             </div>
 
@@ -296,8 +296,8 @@
                 </div>
                 <p class="drop-main" data-i18n="drop_main">Drop file here</p>
                 <p class="drop-or" data-i18n="drop_or">or</p>
-                <label class="btn-choose" data-i18n="drop_choose" onclick="document.getElementById('fileInputEnhance').click(); return false;">Choose file</label>
-                <input type="file" id="fileInputEnhance" accept="image/*" hidden>
+                <label for="fileInputEnhance" class="btn-choose" data-i18n="drop_choose">Choose file</label>
+                <input type="file" id="fileInputEnhance" accept="image/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
             </div>
 
             <div class="enhance-workspace" id="enhanceWorkspace" hidden>
@@ -379,8 +379,8 @@
                 </div>
                 <p class="drop-main" data-i18n="drop_main">Drop file here</p>
                 <p class="drop-or" data-i18n="drop_or">or</p>
-                <label class="btn-choose" data-i18n="drop_choose" onclick="document.getElementById('fileInputUpscale').click(); return false;">Choose file</label>
-                <input type="file" id="fileInputUpscale" accept="image/*" hidden>
+                <label class="btn-choose" data-i18n="drop_choose" id="upscaleChooseBtn">Choose file</label>
+                <input type="file" id="fileInputUpscale" accept="image/*" style="position:absolute;left:-9999px;opacity:0;width:1px;height:1px;">
                 <p class="drop-hint" data-i18n="drop_hint_upscale">JPG · PNG · WEBP · recommended up to 2000×2000px for AI</p>
             </div>
 
@@ -452,8 +452,8 @@
                 </div>
                 <p class="drop-main" data-i18n="drop_main">Перетягни файл сюди</p>
                 <p class="drop-or" data-i18n="drop_or">або</p>
-                <label class="btn-choose" data-i18n="drop_choose" onclick="document.getElementById('fileInputCompress').click();return false;">Вибрати файл</label>
-                <input type="file" id="fileInputCompress" accept="image/*" hidden>
+                <label for="fileInputCompress" class="btn-choose" data-i18n="drop_choose">Choose file</label>
+                <input type="file" id="fileInputCompress" accept="image/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
                 <p class="drop-hint">JPG · PNG · WEBP · до 50MB</p>
             </div>
 
@@ -525,8 +525,8 @@
                     </div>
                     <p class="drop-main" data-i18n="pdf_drop_multi">Перетягни одне або кілька зображень</p>
                     <p class="drop-or" data-i18n="drop_or">або</p>
-                    <label class="btn-choose" onclick="document.getElementById('fileInputPdf').click();return false;" data-i18n="drop_choose">Вибрати файли</label>
-                    <input type="file" id="fileInputPdf" accept="image/*" multiple hidden>
+                    <label for="fileInputPdf" class="btn-choose" data-i18n="drop_choose">Choose file</label>
+                    <input type="file" id="fileInputPdf" accept="image/*" multiple style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
                     <p class="drop-hint">JPG · PNG · WEBP — кілька файлів одночасно</p>
                 </div>
                 <div id="pdfFileList" class="pdf-file-list" hidden></div>

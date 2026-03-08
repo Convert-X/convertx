@@ -306,7 +306,7 @@ function setupDragDrop(dropZone, fileInput, onFile) {
     // Клік на drop zone — відкрити діалог тільки якщо клік НЕ на label/input
     dropZone.addEventListener('click', function(e) {
         var tag = e.target.tagName.toLowerCase();
-        if (tag === 'label' || tag === 'input') return; // label сам відкриє input
+        if (tag === 'label' || tag === 'input' || e.target.closest('label')) return;
         fileInput.click();
     });
     dropZone.addEventListener('dragover', function(e) {
@@ -908,16 +908,50 @@ methodTabs.forEach(function(tab) {
     });
 });
 
-// ── Drag & drop / вибір файлу ──
-setupDragDrop(dropZoneUpscale, fileInputUpscale, function(file) {
+// ── Upscale: пряма обробка файлів (без setupDragDrop) ──
+(function() {
+    var dz  = dropZoneUpscale;
+    var inp = fileInputUpscale;
+
+    // Кнопка "Choose file"
+    var chooseBtn = document.getElementById('upscaleChooseBtn');
+    if (chooseBtn) chooseBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        inp.click();
+    });
+
+    // Клік на будь-яку частину drop zone (крім кнопки)
+    dz.addEventListener('click', function(e) {
+        if (e.target.closest('#upscaleChooseBtn')) return;
+        inp.click();
+    });
+
+    // Drag & Drop
+    dz.addEventListener('dragover',  function(e) { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', function()  { dz.classList.remove('drag-over'); });
+    dz.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dz.classList.remove('drag-over');
+        var f = e.dataTransfer.files[0];
+        if (f && f.type.startsWith('image/')) handleUpscaleFile(f);
+    });
+
+    // Вибір через діалог
+    inp.addEventListener('change', function() {
+        if (inp.files[0]) handleUpscaleFile(inp.files[0]);
+        inp.value = '';
+    });
+})();
+
+function handleUpscaleFile(file) {
     var reader = new FileReader();
+    reader.onerror = function() { alert('Помилка читання файлу'); };
     reader.onload = function(e) {
         var img = new Image();
+        img.onerror = function() { alert('Не вдалось завантажити зображення'); };
         img.onload = function() {
-            // ── Фікс пам'яті: стискаємо якщо > 2000px по будь-якій стороні ──
             var MAX_SIDE = 2000;
-            var srcW = img.naturalWidth;
-            var srcH = img.naturalHeight;
+            var srcW = img.naturalWidth, srcH = img.naturalHeight;
 
             if (srcW > MAX_SIDE || srcH > MAX_SIDE) {
                 var ratio = Math.min(MAX_SIDE / srcW, MAX_SIDE / srcH);
@@ -931,29 +965,30 @@ setupDragDrop(dropZoneUpscale, fileInputUpscale, function(file) {
                 resized.onload = function() {
                     upscaleSourceImg = resized;
                     upscaleOrigImg.src = resizedUrl;
-                    finishLoad(newW + '×' + newH + ' (стиснено)');
+                    applyUpscaleLoad(file.name, newW + '×' + newH + ' (стиснено)');
                 };
                 resized.src = resizedUrl;
             } else {
                 upscaleSourceImg = img;
                 upscaleOrigImg.src = e.target.result;
-                finishLoad(srcW + '×' + srcH);
-            }
-
-            function finishLoad(sizeInfo) {
-                upscaleControls.hidden = false;
-                downloadUpscaleBtn.hidden = true;
-                upscaleCompare.hidden = true;
-                var nameEl = dropZoneUpscale.querySelector('.drop-main');
-                if (nameEl) nameEl.textContent = '✓ ' + file.name + '  (' + sizeInfo + ')';
-                dropZoneUpscale.classList.add('has-file');
-                updateSizePreview();
+                applyUpscaleLoad(file.name, srcW + '×' + srcH);
             }
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
-});
+}
+
+function applyUpscaleLoad(name, sizeInfo) {
+    upscaleControls.hidden = false;
+    downloadUpscaleBtn.hidden = true;
+    upscaleCompare.hidden = true;
+    var nameEl = dropZoneUpscale.querySelector('.drop-main');
+    if (nameEl) nameEl.textContent = '✓ ' + name + '  (' + sizeInfo + ')';
+    dropZoneUpscale.classList.add('has-file');
+    updateSizePreview();
+}
+
 
 // ── Модал BA ──
 var baModal    = document.getElementById('baModal');
