@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="xbyMEulBFMLkLhNGOf0RjXG4R6bDeKjS0wA4sFbRPPY" />
-    <meta name="google-site-verification" content="tca3u6RhTreiKfXmhfV147gqJwwyO_tGyaHwHZ7iFbM" />
     <title>ConvertX — Free Image Converter Online</title>
 
     <!-- ── FAVICON ── -->
@@ -75,6 +74,12 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
                 </span>
                 <span class="nav-label">PDF</span>
+            </li>
+            <li class="nav-item" data-section="bgremove">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10"/><path d="m15 9-6 6M9 9l6 6"/><path d="M16 19h6M19 16v6"/></svg>
+                </span>
+                <span class="nav-label" data-i18n="nav_bgremove">Видал. фон</span>
             </li>
         </ul>
 
@@ -555,6 +560,63 @@
             <canvas id="pdfCanvas" hidden></canvas>
         </section>
 
+        <!-- ── SECTION: ВИДАЛЕННЯ ФОНУ ── -->
+        <section class="section" id="section-bgremove">
+            <div class="section-header">
+                <h1 data-i18n="bgremove_title">Видалення <span class="accent">фону</span></h1>
+                <p class="section-desc" data-i18n="bgremove_desc">AI прибирає фон прямо в браузері — жоден байт не покидає пристрій</p>
+            </div>
+
+            <div class="ai-notice" id="bgremoveNotice">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span data-i18n="bgremove_notice">Перший запуск завантажує модель (~40 МБ). Далі кешується у браузері. Обробка може зайняти 5–30 сек.</span>
+            </div>
+
+            <div class="drop-zone" id="dropZoneBgremove">
+                <div class="drop-animation">
+                    <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
+                        <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="22" cy="28" r="4" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="8,44 22,30 32,40 42,32 56,44" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        <line x1="44" y1="10" x2="56" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="50" y1="4" x2="50" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <p class="drop-main" data-i18n="drop_main">Перетягни файл сюди</p>
+                <p class="drop-or" data-i18n="drop_or">або</p>
+                <label for="fileInputBgremove" class="btn-choose" data-i18n="drop_choose">Choose file</label>
+                <input type="file" id="fileInputBgremove" accept="image/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
+                <p class="drop-hint">JPG · PNG · WEBP · до 20 МБ</p>
+            </div>
+
+            <div class="progress-wrap" id="bgremoveProgress" hidden>
+                <div class="progress-bar"><div class="progress-fill" id="bgremoveProgressFill"></div></div>
+                <span class="progress-label" id="bgremoveProgressLabel" data-i18n="prog_processing">Обробка...</span>
+            </div>
+
+            <div id="bgremoveResultGrid" class="bgremove-result-grid" hidden>
+                <div class="bgremove-panel">
+                    <span class="bgremove-panel-label" data-i18n="compare_before">До</span>
+                    <img id="bgremoveOrigImg" src="" alt="original">
+                </div>
+                <div class="bgremove-panel bgremove-checker">
+                    <span class="bgremove-panel-label" data-i18n="compare_after">Після</span>
+                    <img id="bgremoveResultImg" src="" alt="result">
+                </div>
+            </div>
+
+            <div class="action-row" id="bgremoveActions" hidden>
+                <a class="btn-download" id="bgremoveDownloadBtn" download="no-bg.png">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span data-i18n="btn_download">Завантажити PNG</span>
+                </a>
+                <button class="btn-secondary" id="bgremoveResetBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-3.49"/></svg>
+                    <span data-i18n="btn_reset">Скинути</span>
+                </button>
+            </div>
+        </section>
+
     </main>
 
     <!-- TF.js + jsPDF -->
@@ -589,6 +651,94 @@
             </div>
         </div>
     </div>
+    <!-- ══ BG REMOVAL MODULE ══ -->
+    <script type="module">
+        import { removeBackground } from 'https://esm.sh/@imgly/background-removal@1.4.5';
+
+        var dropZone    = document.getElementById('dropZoneBgremove');
+        var fileInput   = document.getElementById('fileInputBgremove');
+        var progress    = document.getElementById('bgremoveProgress');
+        var progFill    = document.getElementById('bgremoveProgressFill');
+        var progLabel   = document.getElementById('bgremoveProgressLabel');
+        var resultGrid  = document.getElementById('bgremoveResultGrid');
+        var origImg     = document.getElementById('bgremoveOrigImg');
+        var resultImg   = document.getElementById('bgremoveResultImg');
+        var actions     = document.getElementById('bgremoveActions');
+        var downloadBtn = document.getElementById('bgremoveDownloadBtn');
+        var resetBtn    = document.getElementById('bgremoveResetBtn');
+
+        function setProgress(pct, label) {
+            progFill.style.width = pct + '%';
+            if (label) progLabel.textContent = label;
+        }
+
+        function resetUI() {
+            fileInput.value = '';
+            origImg.src = '';
+            resultImg.src = '';
+            resultGrid.hidden = true;
+            actions.hidden = true;
+            progress.hidden = true;
+            dropZone.classList.remove('has-file');
+        }
+
+        async function processFile(file) {
+            if (file.size > 20 * 1024 * 1024) {
+                alert('Файл завеликий. Максимум 20 МБ.');
+                return;
+            }
+            origImg.src = URL.createObjectURL(file);
+            dropZone.classList.add('has-file');
+            resultGrid.hidden = true;
+            actions.hidden = true;
+            progress.hidden = false;
+            setProgress(0, 'Ініціалізація моделі…');
+
+            try {
+                var resultBlob = await removeBackground(file, {
+                    progress: function(key, current, total) {
+                        var pct = total > 0 ? Math.round(current / total * 100) : 0;
+                        var label = key && key.includes('fetch') ? 'Завантаження моделі… ' + pct + '%' : 'Обробка… ' + pct + '%';
+                        setProgress(pct, label);
+                    },
+                    publicPath: 'https://esm.sh/@imgly/background-removal@1.4.5/dist/',
+                });
+
+                var url = URL.createObjectURL(resultBlob);
+                resultImg.src = url;
+                downloadBtn.href = url;
+                setProgress(100, '✓ Готово!');
+                resultGrid.hidden = false;
+                actions.hidden = false;
+                setTimeout(function() { progress.hidden = true; }, 2000);
+
+            } catch(err) {
+                console.error(err);
+                progress.hidden = true;
+                dropZone.classList.remove('has-file');
+                alert('Помилка обробки: ' + (err.message || 'щось пішло не так'));
+            }
+        }
+
+        // Drag & drop
+        dropZone.addEventListener('click', function(e) {
+            if (e.target.tagName.toLowerCase() === 'label' || e.target.closest('label')) return;
+            fileInput.click();
+        });
+        dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            var f = e.dataTransfer.files[0];
+            if (f && f.type.startsWith('image/')) processFile(f);
+        });
+        fileInput.addEventListener('change', function() {
+            if (this.files[0]) processFile(this.files[0]);
+        });
+
+        resetBtn.addEventListener('click', resetUI);
+    </script>
 
 </body>
 </html>

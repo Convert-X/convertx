@@ -74,6 +74,11 @@ var TRANSLATIONS = {
         btn_make_pdf:        'Create PDF',
         pdf2img_soon_title:  'PDF → Images',
         pdf2img_soon_text:   'Requires PDF.js. Ready in the next update!',
+        // BG Remove
+        nav_bgremove:        'Remove BG',
+        bgremove_title:      'Background <span class="accent">Removal</span>',
+        bgremove_desc:       'AI removes the background directly in your browser — 100% private',
+        bgremove_notice:     'First run downloads the model (~40 MB). Then cached in the browser. Processing may take 5–30s.',
     },
     uk: {
         nav_tools:      'Інструменти',
@@ -143,6 +148,11 @@ var TRANSLATIONS = {
         btn_make_pdf:        'Створити PDF',
         pdf2img_soon_title:  'PDF → Фото',
         pdf2img_soon_text:   'Потребує PDF.js. Буде готово в наступному оновленні!',
+        // BG Remove
+        nav_bgremove:        'Видал. фон',
+        bgremove_title:      'Видалення <span class="accent">фону</span>',
+        bgremove_desc:       'AI прибирає фон прямо в браузері — жоден байт не покидає пристрій',
+        bgremove_notice:     'Перший запуск завантажує модель (~40 МБ). Далі кешується у браузері. Обробка може зайняти 5–30 сек.',
     },
     de: {
         nav_tools:      'Werkzeuge',
@@ -212,6 +222,11 @@ var TRANSLATIONS = {
         btn_make_pdf:        'PDF erstellen',
         pdf2img_soon_title:  'PDF → Bilder',
         pdf2img_soon_text:   'Benötigt PDF.js. Fertig im nächsten Update!',
+        // BG Remove
+        nav_bgremove:        'Hintergrund',
+        bgremove_title:      'Hintergrund <span class="accent">entfernen</span>',
+        bgremove_desc:       'KI entfernt den Hintergrund direkt im Browser — 100% privat',
+        bgremove_notice:     'Erster Start lädt das Modell (~40 MB). Danach im Browser gespeichert. Verarbeitung kann 5–30s dauern.',
     }
 };
 
