@@ -887,8 +887,9 @@ var upscaleProgress     = document.getElementById('upscaleProgress');
 var upscaleProgressFill = document.getElementById('upscaleProgressFill');
 var upscaleProgressLabel= document.getElementById('upscaleProgressLabel');
 var upscaleCompare      = document.getElementById('upscaleCompare');
-var upscaleOrigImg      = document.getElementById('upscaleOrigImg');
-var upscaleResultImg    = document.getElementById('upscaleResultImg');
+// Живуть в модалі — отримуємо ліниво
+function getUpscaleOrigImg()   { return document.getElementById('upscaleOrigImg'); }
+function getUpscaleResultImg() { return document.getElementById('upscaleResultImg'); }
 var upscaleCanvas       = document.getElementById('upscaleCanvas');
 var methodTabs          = document.querySelectorAll('.method-tab');
 var aiNotice            = document.getElementById('aiNotice');
@@ -957,13 +958,13 @@ function handleUpscaleFile(file) {
                 var resized = new Image();
                 resized.onload = function() {
                     upscaleSourceImg = resized;
-                    upscaleOrigImg.src = resizedUrl;
+                    var _oi=getUpscaleOrigImg(); if(_oi) _oi.src = resizedUrl;
                     applyUpscaleLoad(file.name, newW + '×' + newH + ' (стиснено)');
                 };
                 resized.src = resizedUrl;
             } else {
                 upscaleSourceImg = img;
-                upscaleOrigImg.src = e.target.result;
+                var _oi2=getUpscaleOrigImg(); if(_oi2) _oi2.src = e.target.result;
                 applyUpscaleLoad(file.name, srcW + '×' + srcH);
             }
         };
@@ -1177,7 +1178,7 @@ function finishUpscale(suffix) {
     setProgress(100, '✓ Готово!');
 
     var dataURL = upscaleCanvas.toDataURL('image/png');
-    upscaleResultImg.src = dataURL;
+    var _ri=getUpscaleResultImg(); if(_ri) _ri.src = dataURL;
 
     // Показуємо кнопку "Порівняти"
     upscaleCompare.hidden = false;
