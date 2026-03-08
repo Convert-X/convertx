@@ -886,7 +886,6 @@ var downloadUpscaleBtn  = document.getElementById('downloadUpscaleBtn');
 var upscaleProgress     = document.getElementById('upscaleProgress');
 var upscaleProgressFill = document.getElementById('upscaleProgressFill');
 var upscaleProgressLabel= document.getElementById('upscaleProgressLabel');
-var upscaleCompare      = document.getElementById('upscaleCompare');
 // Живуть в модалі — отримуємо ліниво
 function getUpscaleOrigImg()   { return document.getElementById('upscaleOrigImg'); }
 function getUpscaleResultImg() { return document.getElementById('upscaleResultImg'); }
@@ -905,7 +904,6 @@ methodTabs.forEach(function(tab) {
         currentMethod = this.dataset.method;
         aiNotice.hidden = (currentMethod !== 'ai');
         downloadUpscaleBtn.hidden = true;
-        upscaleCompare.hidden = true;
     });
 });
 
@@ -976,7 +974,6 @@ function handleUpscaleFile(file) {
 function applyUpscaleLoad(name, sizeInfo) {
     upscaleControls.hidden = false;
     downloadUpscaleBtn.hidden = true;
-    upscaleCompare.hidden = true;
     var nameEl = dropZoneUpscale.querySelector('.drop-main');
     if (nameEl) nameEl.textContent = '✓ ' + name + '  (' + sizeInfo + ')';
     dropZoneUpscale.classList.add('has-file');
@@ -986,13 +983,9 @@ function applyUpscaleLoad(name, sizeInfo) {
 
 // ── Модал BA ──
 var baModal    = document.getElementById('baModal');
-var openBABtn  = document.getElementById('openBAModal');
 var closeBABtn = document.getElementById('closeBAModal');
-
-if (openBABtn)  openBABtn.addEventListener('click',  function() { baModal.hidden = false; initBASlider(); });
 if (closeBABtn) closeBABtn.addEventListener('click', function() { baModal.hidden = true; });
 baModal && baModal.addEventListener('click', function(e) { if (e.target === baModal) baModal.hidden = true; });
-// Закриття на Escape
 document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && baModal && !baModal.hidden) baModal.hidden = true; });
 
 
@@ -1010,7 +1003,6 @@ scaleSelect.addEventListener('change', updateSizePreview);
 upscaleBtn.addEventListener('click', function() {
     if (!upscaleSourceImg) return;
     downloadUpscaleBtn.hidden = true;
-    upscaleCompare.hidden = true;
     upscaleProgress.hidden = false;
     setProgress(0, '...');
     upscaleBtn.disabled = true;
@@ -1178,10 +1170,15 @@ function finishUpscale(suffix) {
     setProgress(100, '✓ Готово!');
 
     var dataURL = upscaleCanvas.toDataURL('image/png');
-    var _ri=getUpscaleResultImg(); if(_ri) _ri.src = dataURL;
-
-    // Показуємо кнопку "Порівняти"
-    upscaleCompare.hidden = false;
+    var _ri = getUpscaleResultImg();
+    if (_ri) {
+        _ri.onload = function() {
+            // Відкриваємо модал тільки коли обидва зображення готові
+            var baModal = document.getElementById('baModal');
+            if (baModal) { baModal.hidden = false; initBASlider(); }
+        };
+        _ri.src = dataURL;
+    }
 
     var blob = dataURItoBlob(dataURL);
     var url  = URL.createObjectURL(blob);
