@@ -789,10 +789,16 @@
                 var { pixel_values } = await bgProcessor(image);
                 var { output } = await bgModel({ input: pixel_values });
 
-                // 3. Маска — shape [1,1,H,W] → беремо дані напряму
+                // 3. DEBUG — дивимось реальну структуру output
                 setProgress(95, t('processing'));
-                var maskTensor = output[0];          // [1,1,H,W]
-                var maskH      = maskTensor.dims[2];
+                console.log('OUTPUT KEYS:', Object.keys(output));
+                console.log('OUTPUT[0]:', output[0]);
+                if (output[0]) {
+                    console.log('dims:', output[0].dims);
+                    console.log('type:', typeof output[0]);
+                }
+                // Тимчасово — показуємо структуру без краша
+                throw new Error('DEBUG: див. консоль — ' + JSON.stringify(Object.keys(output)));
                 var maskW      = maskTensor.dims[3];
                 var maskVals   = maskTensor.data;    // Float32Array, значення 0..1
 

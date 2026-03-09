@@ -79,6 +79,7 @@ var TRANSLATIONS = {
         bgremove_title:      'Background <span class="accent">Removal</span>',
         bgremove_desc:       'AI removes the background directly in your browser — 100% private',
         bgremove_notice:     'First run downloads the model (~40 MB). Then cached in the browser. Processing may take 5–30s.',
+        bgremove_download:   'Download PNG',
     },
     uk: {
         nav_tools:      'Інструменти',
@@ -153,6 +154,7 @@ var TRANSLATIONS = {
         bgremove_title:      'Видалення <span class="accent">фону</span>',
         bgremove_desc:       'AI прибирає фон прямо в браузері — жоден байт не покидає пристрій',
         bgremove_notice:     'Перший запуск завантажує модель (~40 МБ). Далі кешується у браузері. Обробка може зайняти 5–30 сек.',
+        bgremove_download:   'Завантажити PNG',
     },
     de: {
         nav_tools:      'Werkzeuge',
@@ -227,6 +229,7 @@ var TRANSLATIONS = {
         bgremove_title:      'Hintergrund <span class="accent">entfernen</span>',
         bgremove_desc:       'KI entfernt den Hintergrund direkt im Browser — 100% privat',
         bgremove_notice:     'Erster Start lädt das Modell (~40 MB). Danach im Browser gespeichert. Verarbeitung kann 5–30s dauern.',
+        bgremove_download:   'PNG herunterladen',
     }
 };
 
