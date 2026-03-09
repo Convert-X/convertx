@@ -783,55 +783,29 @@
                 // 1. Load model
                 await ensureModel();
 
-                // 2. Inference — RMBG-1.4 потребує { input: pixel_values }
-                setProgress(95, t('processing'));
+                // 2. Inference
+                setProgress(90, t('processing'));
                 var image = await RawImage.fromURL(origUrl);
                 var { pixel_values } = await bgProcessor(image);
                 var { output } = await bgModel({ input: pixel_values });
 
-                // 3. Build alpha mask — інвертуємо (модель повертає foreground mask)
-                setProgress(98, t('processing'));
-                var maskTensor = output[0];
-                var maskData   = maskTensor.data;
-                var maskH      = maskTensor.dims[2];
-                var maskW      = maskTensor.dims[3];
+                // 3. Маска — output[0] shape [1,1,H,W], стискаємо до [H,W]
+                setProgress(95, t('processing'));
+                var maskTensor = output[0].squeeze();   // [H, W]
+                var maskRaw    = await RawImage.fromTensor(maskTensor.mul(255).to('uint8'));
+                var maskResized = maskRaw.resize(image.width, image.height);
 
-                // Resize mask to original image size via canvas
-                var maskCanvas = document.createElement('canvas');
-                maskCanvas.width  = maskW;
-                maskCanvas.height = maskH;
-                var maskCtx = maskCanvas.getContext('2d');
-                var maskImgData = maskCtx.createImageData(maskW, maskH);
-                for (var i = 0; i < maskData.length; i++) {
-                    var v = Math.round(maskData[i] * 255);
-                    maskImgData.data[4*i]   = v;
-                    maskImgData.data[4*i+1] = v;
-                    maskImgData.data[4*i+2] = v;
-                    maskImgData.data[4*i+3] = 255;
-                }
-                maskCtx.putImageData(maskImgData, 0, 0);
-
-                // 4. Draw on canvas with alpha
+                // 4. Накладаємо маску як alpha-канал
                 var canvas = document.createElement('canvas');
                 canvas.width  = image.width;
                 canvas.height = image.height;
                 var ctx = canvas.getContext('2d');
+                ctx.drawImage(await createImageBitmap(file), 0, 0);
 
-                var bmp = await createImageBitmap(file);
-                ctx.drawImage(bmp, 0, 0);
-
-                // Scale mask to image size
-                var scaledMask = document.createElement('canvas');
-                scaledMask.width  = image.width;
-                scaledMask.height = image.height;
-                scaledMask.getContext('2d').drawImage(maskCanvas, 0, 0, image.width, image.height);
-                var scaledCtx  = scaledMask.getContext('2d');
-                var scaledData = scaledCtx.getImageData(0, 0, image.width, image.height);
-
-                var imgData = ctx.getImageData(0, 0, image.width, image.height);
+                var imgData  = ctx.getImageData(0, 0, image.width, image.height);
+                var maskData = maskResized.data;
                 for (var j = 0; j < image.width * image.height; j++) {
-                    // scaledData.data[j*4] = R channel of grayscale mask
-                    imgData.data[j*4 + 3] = scaledData.data[j*4];
+                    imgData.data[j * 4 + 3] = maskData[j];
                 }
                 ctx.putImageData(imgData, 0, 0);
 
