@@ -789,12 +789,11 @@
                 var { pixel_values } = await bgProcessor(image);
                 var { output } = await bgModel({ input: pixel_values });
 
-                // 3. Маска — shape [1, H, W]
+                // 3. Маска — output це сам тензор [1, H, W]
                 setProgress(95, t('processing'));
-                var maskTensor = output[0];
-                var maskH      = maskTensor.dims[1];   // 1024
-                var maskW      = maskTensor.dims[2];   // 1024
-                var maskVals   = maskTensor.data;      // Float32Array
+                var maskH    = output.dims[1];
+                var maskW    = output.dims[2];
+                var maskVals = output.data;   // Float32Array
 
                 var maskCanvas = document.createElement('canvas');
                 maskCanvas.width = maskW; maskCanvas.height = maskH;
