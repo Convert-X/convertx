@@ -789,16 +789,44 @@
                 var { pixel_values } = await bgProcessor(image);
                 var { output } = await bgModel({ input: pixel_values });
 
-                // 3. DEBUG — дивимось реальну структуру output
+                // 3. Маска — shape [1, H, W]
                 setProgress(95, t('processing'));
-                console.log('OUTPUT KEYS:', Object.keys(output));
-                console.log('OUTPUT[0]:', output[0]);
-                if (output[0]) {
-                    console.log('dims:', output[0].dims);
-                    console.log('type:', typeof output[0]);
+                var maskTensor = output[0];
+                var maskH      = maskTensor.dims[1];   // 1024
+                var maskW      = maskTensor.dims[2];   // 1024
+                var maskVals   = maskTensor.data;      // Float32Array
+
+                var maskCanvas = document.createElement('canvas');
+                maskCanvas.width = maskW; maskCanvas.height = maskH;
+                var mCtx = maskCanvas.getContext('2d');
+                var mData = mCtx.createImageData(maskW, maskH);
+                for (var i = 0; i < maskVals.length; i++) {
+                    var v = Math.round(maskVals[i] * 255);
+                    mData.data[i*4]   = v;
+                    mData.data[i*4+1] = v;
+                    mData.data[i*4+2] = v;
+                    mData.data[i*4+3] = 255;
                 }
-                // Тимчасово — показуємо структуру без краша
-                throw new Error('DEBUG: див. консоль — ' + JSON.stringify(Object.keys(output)));
+                mCtx.putImageData(mData, 0, 0);
+
+                // 4. Основний canvas з оригіналом
+                var canvas = document.createElement('canvas');
+                canvas.width = image.width; canvas.height = image.height;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(await createImageBitmap(file), 0, 0);
+
+                // Масштабуємо маску і застосовуємо як alpha
+                var scCanvas = document.createElement('canvas');
+                scCanvas.width = image.width; scCanvas.height = image.height;
+                var scCtx = scCanvas.getContext('2d');
+                scCtx.drawImage(maskCanvas, 0, 0, image.width, image.height);
+                var scData = scCtx.getImageData(0, 0, image.width, image.height);
+
+                var imgData = ctx.getImageData(0, 0, image.width, image.height);
+                for (var j = 0; j < image.width * image.height; j++) {
+                    imgData.data[j*4+3] = scData.data[j*4];
+                }
+                ctx.putImageData(imgData, 0, 0);
                 var maskW      = maskTensor.dims[3];
                 var maskVals   = maskTensor.data;    // Float32Array, значення 0..1
 
