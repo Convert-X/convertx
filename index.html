@@ -718,12 +718,12 @@
                 var rect = slider.getBoundingClientRect();
                 return (clientX - rect.left) / rect.width * 100;
             }
-            slider.onmousedown  = function(e) { e.preventDefault(); dragging = true; applyPos(getPct(e.clientX)); };
-            document.onmousemove = function(e) { if (dragging) applyPos(getPct(e.clientX)); };
-            document.onmouseup   = function()  { dragging = false; };
-            slider.ontouchstart  = function(e) { dragging = true; applyPos(getPct(e.touches[0].clientX)); };
-            slider.ontouchmove   = function(e) { e.preventDefault(); if (dragging) applyPos(getPct(e.touches[0].clientX)); };
-            slider.ontouchend    = function()  { dragging = false; };
+            slider.addEventListener('mousedown',  function(e) { e.preventDefault(); dragging = true; applyPos(getPct(e.clientX)); });
+            window.addEventListener('mousemove',  function(e) { if (dragging) applyPos(getPct(e.clientX)); });
+            window.addEventListener('mouseup',    function()  { dragging = false; });
+            slider.addEventListener('touchstart', function(e) { dragging = true; applyPos(getPct(e.touches[0].clientX)); }, { passive: true });
+            slider.addEventListener('touchmove',  function(e) { e.preventDefault(); if (dragging) applyPos(getPct(e.touches[0].clientX)); }, { passive: false });
+            slider.addEventListener('touchend',   function()  { dragging = false; });
         }
 
         function resetUI() {
@@ -789,12 +789,26 @@
                 var { pixel_values } = await bgProcessor(image);
                 var { output } = await bgModel({ input: pixel_values });
 
-                // 3. Build alpha mask
+                // 3. Build alpha mask — інвертуємо (модель повертає foreground mask)
                 setProgress(98, t('processing'));
-                var maskTensor = output[0];
-                var maskImage  = await RawImage
-                    .fromTensor(maskTensor.mul(255).to('uint8'))
-                    .resize(image.width, image.height);
+                var maskData   = maskTensor.data;
+                var maskH      = maskTensor.dims[2];
+                var maskW      = maskTensor.dims[3];
+
+                // Resize mask to original image size via canvas
+                var maskCanvas = document.createElement('canvas');
+                maskCanvas.width  = maskW;
+                maskCanvas.height = maskH;
+                var maskCtx = maskCanvas.getContext('2d');
+                var maskImgData = maskCtx.createImageData(maskW, maskH);
+                for (var i = 0; i < maskData.length; i++) {
+                    var v = Math.round(maskData[i] * 255);
+                    maskImgData.data[4*i]   = v;
+                    maskImgData.data[4*i+1] = v;
+                    maskImgData.data[4*i+2] = v;
+                    maskImgData.data[4*i+3] = 255;
+                }
+                maskCtx.putImageData(maskImgData, 0, 0);
 
                 // 4. Draw on canvas with alpha
                 var canvas = document.createElement('canvas');
@@ -805,9 +819,18 @@
                 var bmp = await createImageBitmap(file);
                 ctx.drawImage(bmp, 0, 0);
 
+                // Scale mask to image size
+                var scaledMask = document.createElement('canvas');
+                scaledMask.width  = image.width;
+                scaledMask.height = image.height;
+                scaledMask.getContext('2d').drawImage(maskCanvas, 0, 0, image.width, image.height);
+                var scaledCtx  = scaledMask.getContext('2d');
+                var scaledData = scaledCtx.getImageData(0, 0, image.width, image.height);
+
                 var imgData = ctx.getImageData(0, 0, image.width, image.height);
-                for (var i = 0; i < maskImage.data.length; i++) {
-                    imgData.data[4 * i + 3] = maskImage.data[i];
+                for (var j = 0; j < image.width * image.height; j++) {
+                    // scaledData.data[j*4] = R channel of grayscale mask
+                    imgData.data[j*4 + 3] = scaledData.data[j*4];
                 }
                 ctx.putImageData(imgData, 0, 0);
 
