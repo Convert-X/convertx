@@ -789,23 +789,44 @@
                 var { pixel_values } = await bgProcessor(image);
                 var { output } = await bgModel({ input: pixel_values });
 
-                // 3. Маска — output[0] shape [1,1,H,W], стискаємо до [H,W]
+                // 3. Маска — shape [1,1,H,W] → беремо дані напряму
                 setProgress(95, t('processing'));
-                var maskTensor = output[0].squeeze();   // [H, W]
-                var maskRaw    = await RawImage.fromTensor(maskTensor.mul(255).to('uint8'));
-                var maskResized = maskRaw.resize(image.width, image.height);
+                var maskTensor = output[0];          // [1,1,H,W]
+                var maskH      = maskTensor.dims[2];
+                var maskW      = maskTensor.dims[3];
+                var maskVals   = maskTensor.data;    // Float32Array, значення 0..1
 
-                // 4. Накладаємо маску як alpha-канал
+                // Малюємо маску на тимчасовий canvas потрібного розміру
+                var maskCanvas = document.createElement('canvas');
+                maskCanvas.width = maskW; maskCanvas.height = maskH;
+                var mCtx = maskCanvas.getContext('2d');
+                var mData = mCtx.createImageData(maskW, maskH);
+                for (var i = 0; i < maskVals.length; i++) {
+                    var v = Math.round(maskVals[i] * 255);
+                    mData.data[i*4]   = v;
+                    mData.data[i*4+1] = v;
+                    mData.data[i*4+2] = v;
+                    mData.data[i*4+3] = 255;
+                }
+                mCtx.putImageData(mData, 0, 0);
+
+                // 4. Основний canvas з оригіналом
                 var canvas = document.createElement('canvas');
-                canvas.width  = image.width;
-                canvas.height = image.height;
+                canvas.width = image.width; canvas.height = image.height;
                 var ctx = canvas.getContext('2d');
                 ctx.drawImage(await createImageBitmap(file), 0, 0);
 
-                var imgData  = ctx.getImageData(0, 0, image.width, image.height);
-                var maskData = maskResized.data;
+                // Масштабуємо маску до розміру оригіналу і беремо пікселі
+                var scCanvas = document.createElement('canvas');
+                scCanvas.width = image.width; scCanvas.height = image.height;
+                var scCtx = scCanvas.getContext('2d');
+                scCtx.drawImage(maskCanvas, 0, 0, image.width, image.height);
+                var scData = scCtx.getImageData(0, 0, image.width, image.height);
+
+                // Застосовуємо маску як alpha
+                var imgData = ctx.getImageData(0, 0, image.width, image.height);
                 for (var j = 0; j < image.width * image.height; j++) {
-                    imgData.data[j * 4 + 3] = maskData[j];
+                    imgData.data[j*4+3] = scData.data[j*4]; // R каnal = яскравість маски
                 }
                 ctx.putImageData(imgData, 0, 0);
 
