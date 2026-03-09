@@ -783,15 +783,15 @@
                 // 1. Load model
                 await ensureModel();
 
-                // 2. Inference
+                // 2. Inference — RMBG-1.4 потребує { input: pixel_values }
                 setProgress(95, t('processing'));
                 var image = await RawImage.fromURL(origUrl);
-                var inputs = await bgProcessor(image);
-                var output = await bgModel(inputs);
+                var { pixel_values } = await bgProcessor(image);
+                var { output } = await bgModel({ input: pixel_values });
 
                 // 3. Build alpha mask
                 setProgress(98, t('processing'));
-                var maskTensor = output.output[0];            // shape [1,1,H,W]
+                var maskTensor = output[0];
                 var maskImage  = await RawImage
                     .fromTensor(maskTensor.mul(255).to('uint8'))
                     .resize(image.width, image.height);
