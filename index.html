@@ -84,7 +84,7 @@
         </ul>
 
         <div class="sidebar-footer">
-            <span class="version">v0.3.0</span>
+            <span class="version">v0.3.1 <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4fffb0;vertical-align:middle;margin-left:2px;" title="cache OK"></span></span>
             <span class="footer-hint" data-i18n="footer_hint">Більше форматів — скоро</span>
             <div class="privacy-badge" id="privacyBadge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -582,37 +582,48 @@
                         <line x1="50" y1="4" x2="50" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
-                <p class="drop-main" data-i18n="drop_main">Перетягни файл сюди</p>
-                <p class="drop-or" data-i18n="drop_or">або</p>
+                <p class="drop-main" data-i18n="drop_main">Drop file here</p>
+                <p class="drop-or" data-i18n="drop_or">or</p>
                 <label for="fileInputBgremove" class="btn-choose" data-i18n="drop_choose">Choose file</label>
                 <input type="file" id="fileInputBgremove" accept="image/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
-                <p class="drop-hint">JPG · PNG · WEBP · до 20 МБ</p>
+                <p class="drop-hint">JPG · PNG · WEBP · max 20 MB</p>
             </div>
 
             <div class="progress-wrap" id="bgremoveProgress" hidden>
                 <div class="progress-bar"><div class="progress-fill" id="bgremoveProgressFill"></div></div>
-                <span class="progress-label" id="bgremoveProgressLabel" data-i18n="prog_processing">Обробка...</span>
+                <span class="progress-label" id="bgremoveProgressLabel">Processing...</span>
             </div>
 
-            <div id="bgremoveResultGrid" class="bgremove-result-grid" hidden>
-                <div class="bgremove-panel">
-                    <span class="bgremove-panel-label" data-i18n="compare_before">До</span>
-                    <img id="bgremoveOrigImg" src="" alt="original">
-                </div>
-                <div class="bgremove-panel bgremove-checker">
-                    <span class="bgremove-panel-label" data-i18n="compare_after">Після</span>
-                    <img id="bgremoveResultImg" src="" alt="result">
+            <!-- BA Slider (з'являється після обробки) -->
+            <div class="bgremove-slider-wrap" id="bgremoveSliderWrap" hidden>
+                <div class="bgremove-slider" id="bgremoveSlider">
+                    <!-- After (без фону, шахова клітинка під зображенням) -->
+                    <img class="bgremove-img bgremove-after" id="bgremoveResultImg" src="" alt="After">
+                    <!-- Before зверху, обрізається clip-path -->
+                    <div class="bgremove-before-wrap" id="bgremoveBeforeWrap">
+                        <img class="bgremove-img bgremove-before" id="bgremoveOrigImg" src="" alt="Before">
+                    </div>
+                    <!-- Handle -->
+                    <div class="bgremove-handle" id="bgremoveHandle">
+                        <div class="ba-line"></div>
+                        <div class="ba-circle">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="15,18 9,12 15,6"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="9,6 15,12 9,18"/></svg>
+                        </div>
+                    </div>
+                    <span class="ba-label ba-label-before" data-i18n="compare_before">Before</span>
+                    <span class="ba-label ba-label-after"  data-i18n="compare_after">After</span>
                 </div>
             </div>
 
             <div class="action-row" id="bgremoveActions" hidden>
                 <a class="btn-download" id="bgremoveDownloadBtn" download="no-bg.png">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    <span data-i18n="btn_download">Завантажити PNG</span>
+                    <span data-i18n="bgremove_download">Download PNG</span>
                 </a>
                 <button class="btn-secondary" id="bgremoveResetBtn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-3.49"/></svg>
-                    <span data-i18n="btn_reset">Скинути</span>
+                    <span data-i18n="btn_reset">Reset</span>
                 </button>
             </div>
         </section>
@@ -651,93 +662,191 @@
             </div>
         </div>
     </div>
-    <!-- ══ BG REMOVAL MODULE ══ -->
+    <!-- ══ BG REMOVAL MODULE (Transformers.js + RMBG-1.4) ══ -->
     <script type="module">
-        import { removeBackground } from 'https://esm.sh/@imgly/background-removal@1.4.5';
+        import { env, AutoModel, AutoProcessor, RawImage }
+            from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
 
+        env.allowLocalModels = false;   // тільки HF Hub
+
+        var MODEL_ID   = 'briaai/RMBG-1.4';
+        var bgModel    = null;
+        var bgProcessor = null;
+
+        // ── DOM ──
         var dropZone    = document.getElementById('dropZoneBgremove');
         var fileInput   = document.getElementById('fileInputBgremove');
         var progress    = document.getElementById('bgremoveProgress');
         var progFill    = document.getElementById('bgremoveProgressFill');
         var progLabel   = document.getElementById('bgremoveProgressLabel');
-        var resultGrid  = document.getElementById('bgremoveResultGrid');
+        var sliderWrap  = document.getElementById('bgremoveSliderWrap');
+        var slider      = document.getElementById('bgremoveSlider');
+        var beforeWrap  = document.getElementById('bgremoveBeforeWrap');
+        var handle      = document.getElementById('bgremoveHandle');
         var origImg     = document.getElementById('bgremoveOrigImg');
         var resultImg   = document.getElementById('bgremoveResultImg');
         var actions     = document.getElementById('bgremoveActions');
         var downloadBtn = document.getElementById('bgremoveDownloadBtn');
         var resetBtn    = document.getElementById('bgremoveResetBtn');
 
+        // ── i18n ──
+        var BGI18N = {
+            en: { tooBig:'File too large. Max 20 MB.', loadModel:'Loading AI model… ', processing:'Processing… ', done:'✓ Done!', error:'Error: ' },
+            uk: { tooBig:'Файл завеликий. Макс. 20 МБ.', loadModel:'Завантаження моделі… ', processing:'Обробка… ', done:'✓ Готово!', error:'Помилка: ' },
+            de: { tooBig:'Datei zu groß. Max. 20 MB.',   loadModel:'Modell laden… ',         processing:'Verarbeitung… ', done:'✓ Fertig!', error:'Fehler: ' },
+        };
+        function t(key) {
+            var lang = (typeof currentLang !== 'undefined' && BGI18N[currentLang]) ? currentLang : 'en';
+            return BGI18N[lang][key];
+        }
+
         function setProgress(pct, label) {
-            progFill.style.width = pct + '%';
-            if (label) progLabel.textContent = label;
+            progFill.style.width = Math.min(pct, 100) + '%';
+            if (label !== undefined) progLabel.textContent = label;
+        }
+
+        // ── BA Slider ──
+        function initBgSlider() {
+            var dragging = false;
+            function applyPos(pct) {
+                pct = Math.min(Math.max(pct, 2), 98);
+                beforeWrap.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+                handle.style.left = pct + '%';
+            }
+            applyPos(50);
+            function getPct(clientX) {
+                var rect = slider.getBoundingClientRect();
+                return (clientX - rect.left) / rect.width * 100;
+            }
+            slider.onmousedown  = function(e) { e.preventDefault(); dragging = true; applyPos(getPct(e.clientX)); };
+            document.onmousemove = function(e) { if (dragging) applyPos(getPct(e.clientX)); };
+            document.onmouseup   = function()  { dragging = false; };
+            slider.ontouchstart  = function(e) { dragging = true; applyPos(getPct(e.touches[0].clientX)); };
+            slider.ontouchmove   = function(e) { e.preventDefault(); if (dragging) applyPos(getPct(e.touches[0].clientX)); };
+            slider.ontouchend    = function()  { dragging = false; };
         }
 
         function resetUI() {
-            fileInput.value = '';
-            origImg.src = '';
-            resultImg.src = '';
-            resultGrid.hidden = true;
-            actions.hidden = true;
-            progress.hidden = true;
+            fileInput.value  = '';
+            origImg.src      = '';
+            resultImg.src    = '';
+            sliderWrap.hidden = true;
+            actions.hidden    = true;
+            progress.hidden   = true;
             dropZone.classList.remove('has-file');
+            if (beforeWrap) beforeWrap.style.clipPath = 'inset(0 50% 0 0)';
+            if (handle) handle.style.left = '50%';
         }
 
+        // ── Load model (once, then cached) ──
+        async function ensureModel() {
+            if (bgModel && bgProcessor) return;
+
+            bgModel = await AutoModel.from_pretrained(MODEL_ID, {
+                config: { model_type: 'custom' },
+                progress_callback: function(p) {
+                    if (p.status === 'downloading') {
+                        var pct = p.progress ? Math.round(p.progress) : 0;
+                        setProgress(pct, t('loadModel') + pct + '%');
+                    }
+                },
+            });
+
+            bgProcessor = await AutoProcessor.from_pretrained(MODEL_ID, {
+                config: {
+                    do_normalize:  true,
+                    do_pad:        false,
+                    do_rescale:    true,
+                    do_resize:     true,
+                    image_mean:    [0.5, 0.5, 0.5],
+                    image_std:     [1, 1, 1],
+                    resample:      2,
+                    rescale_factor: 0.00392156862745098,
+                    size: { width: 1024, height: 1024 },
+                },
+            });
+        }
+
+        // ── Main processing ──
         async function processFile(file) {
-            if (file.size > 20 * 1024 * 1024) {
-                alert('Файл завеликий. Максимум 20 МБ.');
-                return;
-            }
-            origImg.src = URL.createObjectURL(file);
+            if (file.size > 20 * 1024 * 1024) { alert(t('tooBig')); return; }
+
+            var origUrl = URL.createObjectURL(file);
+            origImg.src = origUrl;
             dropZone.classList.add('has-file');
-            resultGrid.hidden = true;
-            actions.hidden = true;
-            progress.hidden = false;
-            setProgress(0, 'Ініціалізація моделі…');
+            sliderWrap.hidden = true;
+            actions.hidden    = true;
+            progress.hidden   = false;
+            setProgress(0, t('loadModel') + '0%');
 
             try {
-                var resultBlob = await removeBackground(file, {
-                    progress: function(key, current, total) {
-                        var pct = total > 0 ? Math.round(current / total * 100) : 0;
-                        var label = key && key.includes('fetch') ? 'Завантаження моделі… ' + pct + '%' : 'Обробка… ' + pct + '%';
-                        setProgress(pct, label);
-                    },
-                    publicPath: 'https://esm.sh/@imgly/background-removal@1.4.5/dist/',
-                });
+                // 1. Load model
+                await ensureModel();
 
-                var url = URL.createObjectURL(resultBlob);
-                resultImg.src = url;
-                downloadBtn.href = url;
-                setProgress(100, '✓ Готово!');
-                resultGrid.hidden = false;
-                actions.hidden = false;
-                setTimeout(function() { progress.hidden = true; }, 2000);
+                // 2. Inference
+                setProgress(95, t('processing'));
+                var image = await RawImage.fromURL(origUrl);
+                var inputs = await bgProcessor(image);
+                var output = await bgModel(inputs);
+
+                // 3. Build alpha mask
+                setProgress(98, t('processing'));
+                var maskTensor = output.output[0];            // shape [1,1,H,W]
+                var maskImage  = await RawImage
+                    .fromTensor(maskTensor.mul(255).to('uint8'))
+                    .resize(image.width, image.height);
+
+                // 4. Draw on canvas with alpha
+                var canvas = document.createElement('canvas');
+                canvas.width  = image.width;
+                canvas.height = image.height;
+                var ctx = canvas.getContext('2d');
+
+                var bmp = await createImageBitmap(file);
+                ctx.drawImage(bmp, 0, 0);
+
+                var imgData = ctx.getImageData(0, 0, image.width, image.height);
+                for (var i = 0; i < maskImage.data.length; i++) {
+                    imgData.data[4 * i + 3] = maskImage.data[i];
+                }
+                ctx.putImageData(imgData, 0, 0);
+
+                // 5. Show result
+                canvas.toBlob(function(blob) {
+                    var url = URL.createObjectURL(blob);
+                    downloadBtn.href     = url;
+                    downloadBtn.download = 'no-bg.png';
+                    resultImg.onload = function() {
+                        setProgress(100, t('done'));
+                        sliderWrap.hidden = false;
+                        actions.hidden    = false;
+                        initBgSlider();
+                        setTimeout(function() { progress.hidden = true; }, 1800);
+                    };
+                    resultImg.src = url;
+                }, 'image/png');
 
             } catch(err) {
                 console.error(err);
                 progress.hidden = true;
                 dropZone.classList.remove('has-file');
-                alert('Помилка обробки: ' + (err.message || 'щось пішло не так'));
+                alert(t('error') + (err.message || '?'));
             }
         }
 
-        // Drag & drop
+        // ── Drag & drop + input ──
         dropZone.addEventListener('click', function(e) {
             if (e.target.tagName.toLowerCase() === 'label' || e.target.closest('label')) return;
             fileInput.click();
         });
-        dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
-        dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
+        dropZone.addEventListener('dragover',  function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', function()  { dropZone.classList.remove('drag-over'); });
         dropZone.addEventListener('drop', function(e) {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over');
+            e.preventDefault(); dropZone.classList.remove('drag-over');
             var f = e.dataTransfer.files[0];
             if (f && f.type.startsWith('image/')) processFile(f);
         });
-        fileInput.addEventListener('change', function() {
-            if (this.files[0]) processFile(this.files[0]);
-        });
-
-        resetBtn.addEventListener('click', resetUI);
+        fileInput.addEventListener('change', function() { if (this.files[0]) processFile(this.files[0]); });
     </script>
 
 </body>
