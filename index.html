@@ -791,6 +791,7 @@
 
                 // 3. Build alpha mask — інвертуємо (модель повертає foreground mask)
                 setProgress(98, t('processing'));
+                var maskTensor = output[0];
                 var maskData   = maskTensor.data;
                 var maskH      = maskTensor.dims[2];
                 var maskW      = maskTensor.dims[3];
