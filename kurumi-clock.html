@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zafkiel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:#111;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100vh;overflow:hidden;
+  }
+  #svg{
+    width:620px;height:620px;overflow:visible;
+    filter:drop-shadow(0 0 30px rgba(210,150,20,.5))
+           drop-shadow(0 0 80px rgba(180,100,10,.3));
+  }
+  .timelabel{
+    color:rgba(200,150,30,.7);font-family:'Cinzel',serif;
+    font-size:.8rem;letter-spacing:.5em;margin-top:14px;
+  }
+
+  /* Outer ring slow rotation */
+  @keyframes ringRot{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes ringRotR{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+</style>
+</head>
+<body>
+<svg id="svg" viewBox="0 0 620 620" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Light gold face gradient (как на скріншоті — яскравий) -->
+  <radialGradient id="gFace" cx="45%" cy="38%">
+    <stop offset="0%"   stop-color="#fff8cc"/>
+    <stop offset="35%"  stop-color="#f0d060"/>
+    <stop offset="70%"  stop-color="#d4a020"/>
+    <stop offset="100%" stop-color="#b07800"/>
+  </radialGradient>
+
+  <!-- Face outer ring — трохи темніший золотий -->
+  <radialGradient id="gRing" cx="50%" cy="30%">
+    <stop offset="0%"   stop-color="#fce870"/>
+    <stop offset="50%"  stop-color="#c89018"/>
+    <stop offset="100%" stop-color="#8a5c00"/>
+  </radialGradient>
+
+  <!-- Bezel/rim — насичений золотий -->
+  <linearGradient id="gBezel" x1="20%" y1="0%" x2="80%" y2="100%">
+    <stop offset="0%"   stop-color="#fdeea0"/>
+    <stop offset="30%"  stop-color="#e8b828"/>
+    <stop offset="60%"  stop-color="#c08010"/>
+    <stop offset="100%" stop-color="#7a5000"/>
+  </linearGradient>
+
+  <!-- Dark center window for gears -->
+  <radialGradient id="gDark" cx="50%" cy="40%">
+    <stop offset="0%"   stop-color="#1a0c02"/>
+    <stop offset="60%"  stop-color="#0e0600"/>
+    <stop offset="100%" stop-color="#060200"/>
+  </radialGradient>
+
+  <!-- Gear body -->
+  <radialGradient id="gGear" cx="38%" cy="32%">
+    <stop offset="0%"   stop-color="#e8c060"/>
+    <stop offset="55%"  stop-color="#c09020"/>
+    <stop offset="100%" stop-color="#6a4000"/>
+  </radialGradient>
+
+  <!-- Shard gradient -->
+  <linearGradient id="gShard" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%"   stop-color="#fde878"/>
+    <stop offset="45%"  stop-color="#d4a020"/>
+    <stop offset="100%" stop-color="#8a5a00"/>
+  </linearGradient>
+
+  <!-- Crimson for gear accents -->
+  <radialGradient id="gCrim" cx="50%" cy="40%">
+    <stop offset="0%"   stop-color="#a82010"/>
+    <stop offset="100%" stop-color="#3c0800"/>
+  </radialGradient>
+
+  <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="3" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="glowHard" x="-80%" y="-80%" width="260%" height="260%">
+    <feGaussianBlur stdDeviation="5" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="redGlow" x="-80%" y="-80%" width="260%" height="260%">
+    <feGaussianBlur stdDeviation="4" result="b"/>
+    <feFlood flood-color="#c01808" flood-opacity=".5" result="c"/>
+    <feComposite in="c" in2="b" operator="in" result="cb"/>
+    <feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+
+  <!-- Clip to face circle -->
+  <clipPath id="faceClip">
+    <circle cx="310" cy="310" r="185"/>
+  </clipPath>
+  <clipPath id="gearClip">
+    <circle cx="310" cy="310" r="108"/>
+  </clipPath>
+
+  <!-- Outer ring segment gradient — amber+gold like original -->
+  <linearGradient id="gOuterSeg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%"   stop-color="#fde878"/>
+    <stop offset="30%"  stop-color="#d4920c"/>
+    <stop offset="70%"  stop-color="#b07208"/>
+    <stop offset="100%" stop-color="#7a4c00"/>
+  </linearGradient>
+  <!-- Highlight edge on segments -->
+  <linearGradient id="gSegHL" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%"   stop-color="#fef0a0"/>
+    <stop offset="100%" stop-color="#c08010"/>
+  </linearGradient>
+
+  <!-- Outer ring segment fill — amber→gold -->
+  <linearGradient id="gSegFill" x1="15%" y1="0%" x2="85%" y2="100%">
+    <stop offset="0%"   stop-color="#fde070"/>
+    <stop offset="25%"  stop-color="#e8a818"/>
+    <stop offset="60%"  stop-color="#c07808"/>
+    <stop offset="100%" stop-color="#804e00"/>
+  </linearGradient>
+</defs>
+
+<!-- ═══════════════════════════════════ -->
+<!-- OUTER RING — segmented arcs like Zafkiel original -->
+<!-- ═══════════════════════════════════ -->
+<g id="outerRing" style="transform-origin:310px 310px;animation:ringRot 100s linear infinite">
+<g transform="translate(4,5)" opacity=".6">
+  <path d="M 318.72,60.15 L 327.80,67.65 L 337.09,68.51 L 337.87,61.56 A 250,250 0 0,1 385.59,71.70 L 383.48,78.37 L 392.31,81.37 L 403.65,78.20 L 397.28,93.97 L 389.94,87.95 L 381.36,85.05 L 380.45,87.91 A 233,233 0 0,0 335.97,78.45 L 336.31,75.47 L 327.28,74.63 L 318.13,77.14 Z" fill="#7a4800"/>
+  <path d="M 419.59,85.30 L 424.83,95.84 L 432.97,100.41 L 436.51,94.37 A 250,250 0 0,1 462.54,111.93 L 458.27,117.47 L 465.55,123.31 L 477.28,124.21 L 465.91,136.85 L 461.07,128.69 L 453.99,123.02 L 452.16,125.40 A 233,233 0 0,0 427.91,109.03 L 429.42,106.45 L 421.52,102.01 L 412.14,100.58 Z" fill="#7a4800"/>
+  <path d="M 492.84,139.50 L 493.95,151.22 L 499.91,158.40 L 505.38,154.03 A 250,250 0 0,1 537.67,206.72 L 531.30,209.62 L 534.99,218.18 L 544.92,224.49 L 528.95,230.31 L 528.51,220.83 L 524.92,212.51 L 522.19,213.75 A 233,233 0 0,0 492.09,164.64 L 494.44,162.76 L 488.65,155.79 L 480.41,151.09 Z" fill="#7a4800"/>
+  <path d="M 551.48,245.30 L 546.96,256.16 L 548.85,265.30 L 555.73,264.01 A 250,250 0 0,1 557.80,343.06 L 550.87,342.14 L 549.45,351.36 L 554.54,361.98 L 537.91,358.44 L 542.56,350.17 L 543.93,341.21 L 540.95,340.82 A 233,233 0 0,0 539.02,267.14 L 541.97,266.59 L 540.14,257.71 L 535.06,249.70 Z" fill="#7a4800"/>
+  <path d="M 549.08,383.09 L 539.48,389.91 L 536.25,398.67 L 542.76,401.22 A 250,250 0 0,1 518.23,448.35 L 512.40,444.47 L 507.09,452.14 L 507.00,463.92 L 493.61,453.45 L 501.41,448.05 L 506.57,440.60 L 504.07,438.94 A 233,233 0 0,0 526.94,395.02 L 529.73,396.11 L 532.87,387.61 L 532.82,378.12 Z" fill="#7a4800"/>
+  <path d="M 495.79,477.28 L 484.21,479.41 L 477.58,485.97 L 482.40,491.04 A 250,250 0 0,1 421.16,533.93 L 418.05,527.66 L 409.61,531.65 L 403.65,541.80 L 397.28,526.03 L 406.74,525.26 L 414.93,521.39 L 413.60,518.70 A 233,233 0 0,0 470.68,478.73 L 472.75,480.90 L 479.19,474.53 L 483.15,465.91 Z" fill="#7a4800"/>
+  <path d="M 387.25,547.76 L 376.16,543.82 L 367.14,546.19 L 368.79,552.99 A 250,250 0 0,1 320.47,559.78 L 320.18,552.79 L 310.85,553.00 L 301.28,559.85 L 301.87,542.86 L 310.82,546.00 L 319.88,545.79 L 319.76,542.80 A 233,233 0 0,0 364.79,536.47 L 365.49,539.38 L 374.26,537.08 L 382.00,531.60 Z" fill="#7a4800"/>
+  <path d="M 283.87,558.63 L 275.34,550.52 L 266.13,549.01 L 264.87,555.89 A 250,250 0 0,1 179.00,522.93 L 182.67,516.97 L 174.82,511.93 L 163.05,512.25 L 173.05,498.50 L 178.71,506.11 L 186.34,511.01 L 187.91,508.45 A 233,233 0 0,0 267.94,539.17 L 267.40,542.12 L 276.34,543.59 L 285.64,541.72 Z" fill="#7a4800"/>
+  <path d="M 149.30,501.51 L 146.77,490.02 L 139.98,483.62 L 135.08,488.62 A 250,250 0 0,1 82.33,413.28 L 88.70,410.38 L 85.01,401.82 L 75.08,395.51 L 91.05,389.69 L 91.49,399.17 L 95.08,407.49 L 97.81,406.25 A 233,233 0 0,0 146.98,476.47 L 144.88,478.62 L 151.47,484.83 L 160.23,488.49 Z" fill="#7a4800"/>
+  <path d="M 69.68,378.91 L 74.01,367.96 L 71.96,358.86 L 65.11,360.27 A 250,250 0 0,1 75.99,222.04 L 82.54,224.50 L 85.99,215.83 L 83.42,204.35 L 98.83,211.53 L 92.44,218.55 L 89.09,226.97 L 91.90,228.02 A 233,233 0 0,0 81.76,356.85 L 78.82,357.45 L 80.81,366.29 L 86.03,374.22 Z" fill="#7a4800"/>
+  <path d="M 91.35,188.80 L 102.15,184.12 L 107.13,176.23 L 101.29,172.38 A 250,250 0 0,1 168.76,103.72 L 172.71,109.50 L 180.51,104.38 L 185.00,93.49 L 193.50,108.22 L 184.24,110.30 L 176.67,115.27 L 178.36,117.75 A 233,233 0 0,0 115.48,181.74 L 112.98,180.09 L 108.13,187.75 L 106.21,197.04 Z" fill="#7a4800"/>
+  <path d="M 200.41,85.30 L 211.94,87.66 L 220.55,84.06 L 217.97,77.56 A 250,250 0 0,1 282.13,61.56 L 282.91,68.51 L 292.20,67.65 L 301.28,60.15 L 301.87,77.14 L 292.72,74.63 L 283.69,75.47 L 284.03,78.45 A 233,233 0 0,0 224.23,93.36 L 223.12,90.57 L 214.76,94.07 L 207.86,100.58 Z" fill="#7a4800"/>
+  <path d="M 318.72,60.15 L 327.80,67.65 L 337.09,68.51 L 337.87,61.56 A 250,250 0 0,1 397.96,75.99 L 395.50,82.54 L 404.17,85.99 L 415.65,83.42 L 408.47,98.83 L 401.45,92.44 L 393.03,89.09 L 391.98,91.90 A 233,233 0 0,0 335.97,78.45 L 336.31,75.47 L 327.28,74.63 L 318.13,77.14 Z" fill="#7a4800"/>
+  <path d="M 435.00,93.49 L 439.49,104.38 L 447.29,109.50 L 451.24,103.72 A 250,250 0 0,1 511.22,161.65 L 505.59,165.80 L 510.98,173.41 L 522.01,177.52 L 507.60,186.53 L 505.19,177.35 L 499.95,169.95 L 497.54,171.73 A 233,233 0 0,0 441.64,117.75 L 443.33,115.27 L 435.76,110.30 L 426.50,108.22 Z" fill="#7a4800"/>
+  <path d="M 530.74,192.63 L 528.78,204.24 L 532.68,212.72 L 539.09,209.91 A 250,250 0 0,1 556.64,269.17 L 549.74,270.31 L 551.08,279.54 L 559.05,288.21 L 542.11,289.69 L 544.14,280.42 L 542.83,271.46 L 539.87,271.95 A 233,233 0 0,0 523.51,216.72 L 526.26,215.52 L 522.48,207.29 L 515.73,200.61 Z" fill="#7a4800"/>
+</g>
+<path d="M 318.72,60.15 L 327.80,67.65 L 337.09,68.51 L 337.87,61.56 A 250,250 0 0,1 385.59,71.70 L 383.48,78.37 L 392.31,81.37 L 403.65,78.20 L 397.28,93.97 L 389.94,87.95 L 381.36,85.05 L 380.45,87.91 A 233,233 0 0,0 335.97,78.45 L 336.31,75.47 L 327.28,74.63 L 318.13,77.14 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 334.56,76.29 A 235,235 0 0,1 382.62,86.50" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 419.59,85.30 L 424.83,95.84 L 432.97,100.41 L 436.51,94.37 A 250,250 0 0,1 462.54,111.93 L 458.27,117.47 L 465.55,123.31 L 477.28,124.21 L 465.91,136.85 L 461.07,128.69 L 453.99,123.02 L 452.16,125.40 A 233,233 0 0,0 427.91,109.03 L 429.42,106.45 L 421.52,102.01 L 412.14,100.58 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 424.65,104.86 A 235,235 0 0,1 457.25,126.86" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 492.84,139.50 L 493.95,151.22 L 499.91,158.40 L 505.38,154.03 A 250,250 0 0,1 537.67,206.72 L 531.30,209.62 L 534.99,218.18 L 544.92,224.49 L 528.95,230.31 L 528.51,220.83 L 524.92,212.51 L 522.19,213.75 A 233,233 0 0,0 492.09,164.64 L 494.44,162.76 L 488.65,155.79 L 480.41,151.09 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 494.17,164.03 A 235,235 0 0,1 523.67,212.17" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 551.48,245.30 L 546.96,256.16 L 548.85,265.30 L 555.73,264.01 A 250,250 0 0,1 557.80,343.06 L 550.87,342.14 L 549.45,351.36 L 554.54,361.98 L 537.91,358.44 L 542.56,350.17 L 543.93,341.21 L 540.95,340.82 A 233,233 0 0,0 539.02,267.14 L 541.97,266.59 L 540.14,257.71 L 535.06,249.70 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 541.71,270.81 A 235,235 0 0,1 543.44,337.01" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 549.08,383.09 L 539.48,389.91 L 536.25,398.67 L 542.76,401.22 A 250,250 0 0,1 518.23,448.35 L 512.40,444.47 L 507.09,452.14 L 507.00,463.92 L 493.61,453.45 L 501.41,448.05 L 506.57,440.60 L 504.07,438.94 A 233,233 0 0,0 526.94,395.02 L 529.73,396.11 L 532.87,387.61 L 532.82,378.12 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 529.10,394.98 A 235,235 0 0,1 505.28,440.73" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 495.79,477.28 L 484.21,479.41 L 477.58,485.97 L 482.40,491.04 A 250,250 0 0,1 421.16,533.93 L 418.05,527.66 L 409.61,531.65 L 403.65,541.80 L 397.28,526.03 L 406.74,525.26 L 414.93,521.39 L 413.60,518.70 A 233,233 0 0,0 470.68,478.73 L 472.75,480.90 L 479.19,474.53 L 483.15,465.91 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 469.67,482.43 A 235,235 0 0,1 417.42,519.01" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 387.25,547.76 L 376.16,543.82 L 367.14,546.19 L 368.79,552.99 A 250,250 0 0,1 320.47,559.78 L 320.18,552.79 L 310.85,553.00 L 301.28,559.85 L 301.87,542.86 L 310.82,546.00 L 319.88,545.79 L 319.76,542.80 A 233,233 0 0,0 364.79,536.47 L 365.49,539.38 L 374.26,537.08 L 382.00,531.60 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 366.85,538.02 A 235,235 0 0,1 318.20,544.86" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 283.87,558.63 L 275.34,550.52 L 266.13,549.01 L 264.87,555.89 A 250,250 0 0,1 179.00,522.93 L 182.67,516.97 L 174.82,511.93 L 163.05,512.25 L 173.05,498.50 L 178.71,506.11 L 186.34,511.01 L 187.91,508.45 A 233,233 0 0,0 267.94,539.17 L 267.40,542.12 L 276.34,543.59 L 285.64,541.72 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 261.14,539.86 A 235,235 0 0,1 192.50,513.52" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 149.30,501.51 L 146.77,490.02 L 139.98,483.62 L 135.08,488.62 A 250,250 0 0,1 82.33,413.28 L 88.70,410.38 L 85.01,401.82 L 75.08,395.51 L 91.05,389.69 L 91.49,399.17 L 95.08,407.49 L 97.81,406.25 A 233,233 0 0,0 146.98,476.47 L 144.88,478.62 L 151.47,484.83 L 160.23,488.49 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 140.96,473.24 A 235,235 0 0,1 98.78,413.02" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 69.68,378.91 L 74.01,367.96 L 71.96,358.86 L 65.11,360.27 A 250,250 0 0,1 75.99,222.04 L 82.54,224.50 L 85.99,215.83 L 83.42,204.35 L 98.83,211.53 L 92.44,218.55 L 89.09,226.97 L 91.90,228.02 A 233,233 0 0,0 81.76,356.85 L 78.82,357.45 L 80.81,366.29 L 86.03,374.22 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 77.17,341.89 A 235,235 0 0,1 85.03,242.08" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 91.35,188.80 L 102.15,184.12 L 107.13,176.23 L 101.29,172.38 A 250,250 0 0,1 168.76,103.72 L 172.71,109.50 L 180.51,104.38 L 185.00,93.49 L 193.50,108.22 L 184.24,110.30 L 176.67,115.27 L 178.36,117.75 A 233,233 0 0,0 115.48,181.74 L 112.98,180.09 L 108.13,187.75 L 106.21,197.04 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 117.97,174.54 A 235,235 0 0,1 171.21,120.36" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 200.41,85.30 L 211.94,87.66 L 220.55,84.06 L 217.97,77.56 A 250,250 0 0,1 282.13,61.56 L 282.91,68.51 L 292.20,67.65 L 301.28,60.15 L 301.87,77.14 L 292.72,74.63 L 283.69,75.47 L 284.03,78.45 A 233,233 0 0,0 224.23,93.36 L 223.12,90.57 L 214.76,94.07 L 207.86,100.58 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 225.02,90.90 A 235,235 0 0,1 282.18,76.65" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 318.72,60.15 L 327.80,67.65 L 337.09,68.51 L 337.87,61.56 A 250,250 0 0,1 397.96,75.99 L 395.50,82.54 L 404.17,85.99 L 415.65,83.42 L 408.47,98.83 L 401.45,92.44 L 393.03,89.09 L 391.98,91.90 A 233,233 0 0,0 335.97,78.45 L 336.31,75.47 L 327.28,74.63 L 318.13,77.14 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 337.01,76.56 A 235,235 0 0,1 391.91,89.74" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 435.00,93.49 L 439.49,104.38 L 447.29,109.50 L 451.24,103.72 A 250,250 0 0,1 511.22,161.65 L 505.59,165.80 L 510.98,173.41 L 522.01,177.52 L 507.60,186.53 L 505.19,177.35 L 499.95,169.95 L 497.54,171.73 A 233,233 0 0,0 441.64,117.75 L 443.33,115.27 L 435.76,110.30 L 426.50,108.22 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 446.80,118.92 A 235,235 0 0,1 496.19,166.62" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+<path d="M 530.74,192.63 L 528.78,204.24 L 532.68,212.72 L 539.09,209.91 A 250,250 0 0,1 556.64,269.17 L 549.74,270.31 L 551.08,279.54 L 559.05,288.21 L 542.11,289.69 L 544.14,280.42 L 542.83,271.46 L 539.87,271.95 A 233,233 0 0,0 523.51,216.72 L 526.26,215.52 L 522.48,207.29 L 515.73,200.61 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
+<path d="M 525.67,216.67 A 235,235 0 0,1 541.71,270.81" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
+</g>
+
+<!-- ═══════════════════════════════════ -->
+<!-- OUTERMOST FRAME (stepped bezel like original) -->
+<!-- ═══════════════════════════════════ -->
+<!-- Shadow/depth ring -->
+<circle cx="310" cy="310" r="202" fill="rgba(0,0,0,.3)"/>
+<!-- Outer rim -->
+<circle cx="310" cy="310" r="200" fill="url(#gBezel)" opacity=".2"/>
+<circle cx="310" cy="310" r="200" fill="none" stroke="url(#gBezel)" stroke-width="18" opacity=".95"/>
+<!-- Rim inner shadow -->
+<circle cx="310" cy="310" r="190" fill="none" stroke="rgba(0,0,0,.4)" stroke-width="3"/>
+<!-- Rim inner highlight -->
+<circle cx="310" cy="310" r="191" fill="none" stroke="rgba(255,240,140,.25)" stroke-width="1.5"/>
+
+<!-- Bezel tick marks -->
+<g id="bezelTicks"></g>
+
+<!-- ═══════════════════════════════════ -->
+<!-- MAIN FACE — bright golden (like original!) -->
+<!-- ═══════════════════════════════════ -->
+<!-- Outer face ring (darker gold, where numerals sit) -->
+<circle cx="310" cy="310" r="188" fill="url(#gRing)"/>
+
+<!-- Subtle inner shadow on outer ring -->
+<circle cx="310" cy="310" r="188" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="6"/>
+
+<!-- Inner face ring (lighter gold) -->
+<circle cx="310" cy="310" r="160" fill="url(#gFace)"/>
+
+<!-- Ring separator lines -->
+<circle cx="310" cy="310" r="163" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="2"/>
+<circle cx="310" cy="310" r="156" fill="none" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
+<circle cx="310" cy="310" r="185" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="1.5"/>
+
+<!-- Tick marks on face -->
+<g id="faceTicks"></g>
+<!-- Diamond markers between numerals -->
+<g id="diamondMarks"></g>
+<!-- Roman numerals — dark on light gold -->
+<g id="romanNums"></g>
+
+<!-- ═══════════════════════════════════ -->
+<!-- DARK GEAR WINDOW (center opening) -->
+<!-- ═══════════════════════════════════ -->
+<circle cx="310" cy="310" r="110" fill="url(#gDark)"/>
+<circle cx="310" cy="310" r="110" fill="none" stroke="rgba(0,0,0,.6)" stroke-width="4"/>
+<!-- Inner edge highlight -->
+<circle cx="310" cy="310" r="107" fill="none" stroke="rgba(180,120,20,.4)" stroke-width="1.5"/>
+
+<!-- ═══════════════════════════════════ -->
+<!-- GEAR MECHANISM (inside dark window) -->
+<!-- ═══════════════════════════════════ -->
+<g clip-path="url(#gearClip)">
+
+  <!-- Central large gear with hub -->
+  <g id="gearC">
+    <!-- Gear body -->
+    <circle cx="310" cy="310" r="50" fill="url(#gGear)"/>
+    <circle cx="310" cy="310" r="50" fill="none" stroke="#e8c060" stroke-width="1.5" opacity=".5"/>
+    <!-- Gear teeth -->
+    <circle cx="310" cy="310" r="56" fill="none"
+            stroke="url(#gGear)" stroke-width="9" stroke-dasharray="11 7.3" opacity=".9"/>
+    <!-- Hub plate -->
+    <circle cx="310" cy="310" r="32" fill="url(#gGear)" stroke="#e8c060" stroke-width="1.5" opacity=".7"/>
+    <!-- Hub slots -->
+    <circle cx="310" cy="310" r="22" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
+    <!-- Hub center bolt -->
+    <circle cx="310" cy="310" r="10" fill="url(#gGear)" stroke="#fce060" stroke-width="1.5"/>
+    <!-- Center hole -->
+    <circle cx="310" cy="310" r="6" fill="url(#gDark)" stroke="#d4a020" stroke-width="1"/>
+    <!-- Offset circle holes (like original) -->
+    <circle cx="310" cy="293" r="5" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
+    <circle cx="322" cy="318" r="4" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
+    <circle cx="298" cy="322" r="3.5" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
+    <!-- Spokes -->
+    <g stroke="#d4a020" stroke-width="2" opacity=".5">
+      <line x1="310" y1="262" x2="310" y2="358"/>
+      <line x1="262" y1="310" x2="358" y2="310"/>
+      <line x1="276" y1="276" x2="344" y2="344"/>
+      <line x1="344" y1="276" x2="276" y2="344"/>
+    </g>
+    <!-- Screw detail on hub -->
+    <line x1="304" y1="310" x2="316" y2="310" stroke="#fce060" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="310" y1="304" x2="310" y2="316" stroke="#fce060" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Upper gear (top-right area) -->
+  <g id="gearT">
+    <circle cx="340" cy="258" r="28" fill="url(#gGear)"/>
+    <circle cx="340" cy="258" r="32" fill="none"
+            stroke="url(#gGear)" stroke-width="6" stroke-dasharray="7 4.7" opacity=".88"/>
+    <!-- Crimson accent ring -->
+    <circle cx="340" cy="258" r="20" fill="url(#gCrim)" opacity=".6"/>
+    <circle cx="340" cy="258" r="20" fill="none" stroke="#c04010" stroke-width="1.5" opacity=".7"/>
+    <circle cx="340" cy="258" r="12" fill="url(#gGear)"/>
+    <circle cx="340" cy="258" r="6" fill="url(#gDark)" stroke="#d4a020" stroke-width="1"/>
+    <g stroke="#d4a020" stroke-width="1.5" opacity=".45">
+      <line x1="340" y1="234" x2="340" y2="282"/>
+      <line x1="316" y1="258" x2="364" y2="258"/>
+    </g>
+  </g>
+
+  <!-- Lower-right gear -->
+  <g id="gearBR">
+    <circle cx="350" cy="355" r="26" fill="url(#gGear)"/>
+    <circle cx="350" cy="355" r="30" fill="none"
+            stroke="url(#gGear)" stroke-width="5.5" stroke-dasharray="6.5 4.3" opacity=".85"/>
+    <circle cx="350" cy="355" r="18" fill="url(#gCrim)" opacity=".55"/>
+    <circle cx="350" cy="355" r="18" fill="none" stroke="#c04010" stroke-width="1.5" opacity=".65"/>
+    <circle cx="350" cy="355" r="10" fill="url(#gGear)"/>
+    <circle cx="350" cy="355" r="5" fill="url(#gDark)" stroke="#d4a020" stroke-width="1"/>
+    <g stroke="#d4a020" stroke-width="1.5" opacity=".4">
+      <line x1="350" y1="333" x2="350" y2="377"/>
+      <line x1="328" y1="355" x2="372" y2="355"/>
+    </g>
+  </g>
+
+  <!-- Left small gear -->
+  <g id="gearL">
+    <circle cx="268" cy="348" r="22" fill="url(#gGear)"/>
+    <circle cx="268" cy="348" r="25" fill="none"
+            stroke="url(#gGear)" stroke-width="4.5" stroke-dasharray="5.5 3.7" opacity=".82"/>
+    <circle cx="268" cy="348" r="14" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
+    <circle cx="268" cy="348" r="7" fill="url(#gGear)"/>
+    <circle cx="268" cy="348" r="3.5" fill="url(#gDark)" stroke="#d4a020" stroke-width=".8"/>
+    <g stroke="#d4a020" stroke-width="1.2" opacity=".4">
+      <line x1="268" y1="330" x2="268" y2="366"/>
+      <line x1="250" y1="348" x2="286" y2="348"/>
+    </g>
+  </g>
+
+  <!-- Top-center small gear -->
+  <g id="gearTC">
+    <circle cx="290" cy="255" r="18" fill="url(#gGear)"/>
+    <circle cx="290" cy="255" r="21" fill="none"
+            stroke="url(#gGear)" stroke-width="4" stroke-dasharray="4.9 3.3" opacity=".8"/>
+    <circle cx="290" cy="255" r="11" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
+    <circle cx="290" cy="255" r="5.5" fill="url(#gGear)"/>
+    <circle cx="290" cy="255" r="2.5" fill="url(#gDark)"/>
+  </g>
+
+  <!-- Tiny gear bottom -->
+  <g id="gearB">
+    <circle cx="318" cy="390" r="16" fill="url(#gGear)"/>
+    <circle cx="318" cy="390" r="19" fill="none"
+            stroke="url(#gGear)" stroke-width="3.5" stroke-dasharray="4.4 2.9" opacity=".78"/>
+    <circle cx="318" cy="390" r="9" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
+    <circle cx="318" cy="390" r="4.5" fill="url(#gGear)"/>
+  </g>
+
+</g>
+
+<!-- Gear window border ring over gears -->
+<circle cx="310" cy="310" r="108" fill="none" stroke="#c09020" stroke-width="2" opacity=".6"/>
+
+<!-- ═══════════════════════════════════ -->
+<!-- CLOCK HANDS -->
+<!-- ═══════════════════════════════════ -->
+<g id="hands" transform="translate(310,310)">
+
+  <!-- Hour hand — gun shaped, pointing up -->
+  <g id="hourHand">
+    <!-- Barrel -->
+    <rect x="-5.5" y="-88" width="11" height="75" rx="4"
+          fill="#d4a020" stroke="#fce060" stroke-width="1" filter="url(#glow)"/>
+    <!-- Muzzle -->
+    <path d="M -5.5,-88 Q 0,-102 5.5,-88 L 5.5,-80 L -5.5,-80Z"
+          fill="#fce060"/>
+    <!-- Sight -->
+    <rect x="-1.5" y="-100" width="3" height="6" rx="1" fill="#fce878"/>
+    <!-- Trigger guard -->
+    <path d="M -5.5,-46 Q -15,-38 -13,-26 Q -11,-16 0,-16 Q 11,-16 11,-26 Q 11,-36 5.5,-46"
+          fill="none" stroke="#d4a020" stroke-width="3.5" stroke-linejoin="round"/>
+    <!-- Lock plate -->
+    <path d="M 5.5,-64 L 15,-60 Q 20,-52 15,-46 L 5.5,-44"
+          fill="#c49018" stroke="#fce060" stroke-width=".8"/>
+    <!-- Grip -->
+    <path d="M -5.5,-10 Q -12,-4 -13,12 Q -11,22 -5.5,24 L 5.5,24 L 5.5,-10Z"
+          fill="#b87810" stroke="#d4a020" stroke-width="1"/>
+    <!-- Grip texture lines -->
+    <line x1="-9" y1="-2" x2="-9" y2="16" stroke="rgba(255,220,50,.25)" stroke-width=".8"/>
+    <line x1="-6" y1="-2" x2="-6" y2="16" stroke="rgba(255,220,50,.15)" stroke-width=".6"/>
+  </g>
+
+  <!-- Minute hand — long musket -->
+  <g id="minuteHand">
+    <rect x="-4" y="-145" width="8" height="118" rx="3"
+          fill="#c8980c" stroke="#fce060" stroke-width=".8" filter="url(#glow)"/>
+    <path d="M -4,-145 Q 0,-160 4,-145 L 4,-137 L -4,-137Z" fill="#fce870"/>
+    <!-- Bayonet -->
+    <path d="M 4,-145 L 12,-158 L 9,-145" fill="#d4a018" opacity=".8"/>
+    <rect x="-1.5" y="-158" width="3" height="6" rx="1" fill="#fce870"/>
+    <!-- Lock -->
+    <path d="M 4,-88 L 16,-83 Q 20,-75 16,-68 L 4,-66"
+          fill="#c49018" stroke="#fce060" stroke-width=".7"/>
+    <!-- Trigger guard -->
+    <path d="M -4,-64 Q -13,-55 -11,-42 Q -9,-32 0,-32 Q 9,-32 9,-42 Q 9,-53 4,-64"
+          fill="none" stroke="#c8980c" stroke-width="3"/>
+    <!-- Grip -->
+    <path d="M -4,-26 Q -10,-18 -11,0 Q -9,12 -4,14 L 4,14 L 4,-26Z"
+          fill="#b07808" stroke="#c8980c" stroke-width=".8"/>
+    <line x1="-8" y1="-18" x2="-8" y2="8" stroke="rgba(255,215,40,.2)" stroke-width=".7"/>
+  </g>
+
+  <!-- Second hand — thin red needle -->
+  <g id="secondHand" filter="url(#redGlow)">
+    <line x1="0" y1="32" x2="0" y2="-160"
+          stroke="#cc1808" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cy="32" r="5.5" fill="#b01408" stroke="#dd2818" stroke-width="1.2"/>
+    <line x1="0" y1="32" x2="0" y2="46" stroke="#e03020" stroke-width="2.5"/>
+  </g>
+
+  <!-- Center boss -->
+  <circle r="18" fill="url(#gGear)" stroke="#fce070" stroke-width="2" filter="url(#glow)"/>
+  <circle r="12" fill="url(#gCrim)" stroke="#c01808" stroke-width="1.5"/>
+  <circle r="7" fill="none" stroke="#e8c040" stroke-width="1" opacity=".65"/>
+  <circle r="3.5" fill="#fce080" filter="url(#glow)"/>
+  <line x1="-16" y1="0" x2="16" y2="0" stroke="#e8c040" stroke-width=".9" opacity=".4"/>
+  <line x1="0" y1="-16" x2="0" y2="16" stroke="#e8c040" stroke-width=".9" opacity=".4"/>
+</g>
+
+</svg>
+<div class="timelabel" id="td">--:--:--</div>
+
+<script>
+(function(){
+  var ns='http://www.w3.org/2000/svg';
+  var cx=310, cy=310;
+
+  // Bezel ticks (72)
+  var bt=document.getElementById('bezelTicks');
+  for(var i=0;i<72;i++){
+    var a=(i/72)*Math.PI*2-Math.PI/2;
+    var big=i%6===0, r1=192, r2=big?180:187;
+    var l=document.createElementNS(ns,'line');
+    l.setAttribute('x1',(cx+r1*Math.cos(a)).toFixed(2));
+    l.setAttribute('y1',(cy+r1*Math.sin(a)).toFixed(2));
+    l.setAttribute('x2',(cx+r2*Math.cos(a)).toFixed(2));
+    l.setAttribute('y2',(cy+r2*Math.sin(a)).toFixed(2));
+    l.setAttribute('stroke',big?'rgba(0,0,0,.6)':'rgba(0,0,0,.4)');
+    l.setAttribute('stroke-width',big?'3':'1.5');
+    bt.appendChild(l);
+  }
+
+  // Face ticks — on the outer gold ring, dark marks
+  var ft=document.getElementById('faceTicks');
+  for(var j=0;j<60;j++){
+    var fa=(j/60)*Math.PI*2-Math.PI/2;
+    var big5=j%5===0;
+    var fr1=big5?168:170, fr2=big5?178:174;
+    var fl=document.createElementNS(ns,'line');
+    fl.setAttribute('x1',(cx+fr1*Math.cos(fa)).toFixed(2));
+    fl.setAttribute('y1',(cy+fr1*Math.sin(fa)).toFixed(2));
+    fl.setAttribute('x2',(cx+fr2*Math.cos(fa)).toFixed(2));
+    fl.setAttribute('y2',(cy+fr2*Math.sin(fa)).toFixed(2));
+    fl.setAttribute('stroke','rgba(80,40,0,.7)');
+    fl.setAttribute('stroke-width',big5?'2.5':'1.2');
+    ft.appendChild(fl);
+  }
+
+  // Diamond markers between hour positions (like original has small diamond shapes)
+  var dm=document.getElementById('diamondMarks');
+  for(var d=0;d<48;d++){
+    var da=(d/48)*Math.PI*2-Math.PI/2;
+    // Skip positions that would overlap with numerals (every 4th)
+    var dr=173;
+    var dx=cx+dr*Math.cos(da), dy2=cy+dr*Math.sin(da);
+    if(d%4===0){ // larger diamond at sub-hour positions
+      var s=3.5;
+      var poly=document.createElementNS(ns,'polygon');
+      poly.setAttribute('points',
+        dx.toFixed(1)+','+(dy2-s).toFixed(1)+' '+
+        (dx+s).toFixed(1)+','+dy2.toFixed(1)+' '+
+        dx.toFixed(1)+','+(dy2+s).toFixed(1)+' '+
+        (dx-s).toFixed(1)+','+dy2.toFixed(1));
+      poly.setAttribute('fill','rgba(80,40,0,.6)');
+      dm.appendChild(poly);
+    } else {
+      var c2=document.createElementNS(ns,'circle');
+      c2.setAttribute('cx',dx.toFixed(2));
+      c2.setAttribute('cy',dy2.toFixed(2));
+      c2.setAttribute('r','1.4');
+      c2.setAttribute('fill','rgba(80,40,0,.45)');
+      dm.appendChild(c2);
+    }
+  }
+
+  // Roman numerals — dark on bright gold face
+  var romans=['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'];
+  var rn=document.getElementById('romanNums');
+  for(var r=0;r<12;r++){
+    var ra=(r/12)*Math.PI*2-Math.PI/2;
+    var rr=143;
+    var t=document.createElementNS(ns,'text');
+    t.setAttribute('x',(cx+rr*Math.cos(ra)).toFixed(2));
+    t.setAttribute('y',(cy+rr*Math.sin(ra)).toFixed(2));
+    t.setAttribute('font-family','Cinzel,serif');
+    t.setAttribute('font-size',r===0?'20':r%3===0?'18':'15');
+    t.setAttribute('font-weight',r===0||r%3===0?'700':'400');
+    // Dark brown/black on bright gold — like original
+    t.setAttribute('fill',r===0?'#1a0a00':'rgba(40,18,0,.85)');
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('dominant-baseline','middle');
+    rn.appendChild(t);
+    t.textContent=romans[r];
+  }
+})();
+
+// Gears
+var gears=[
+  {id:'gearC',  cx:310,cy:310, spd:.12, a:0},
+  {id:'gearT',  cx:340,cy:258, spd:-.35,a:0},
+  {id:'gearBR', cx:350,cy:355, spd:.32, a:0},
+  {id:'gearL',  cx:268,cy:348, spd:-.55,a:0},
+  {id:'gearTC', cx:290,cy:255, spd:.65, a:0},
+  {id:'gearB',  cx:318,cy:390, spd:-.48,a:0},
+];
+
+function tickG(){
+  gears.forEach(function(g){
+    g.a+=g.spd;
+    document.getElementById(g.id).setAttribute('transform',
+      'translate('+g.cx+','+g.cy+') rotate('+g.a+') translate(-'+g.cx+',-'+g.cy+')');
+  });
+}
+
+function updateH(){
+  var now=new Date();
+  var h=now.getHours()%12,m=now.getMinutes(),
+      s=now.getSeconds(),ms=now.getMilliseconds();
+  var sD=(s+ms/1000)*6;
+  var mD=(m+s/60)*6;
+  var hD=(h+m/60)*30;
+  document.getElementById('hourHand').setAttribute('transform','rotate('+hD+')');
+  document.getElementById('minuteHand').setAttribute('transform','rotate('+mD+')');
+  document.getElementById('secondHand').setAttribute('transform','rotate('+sD+')');
+  var p=function(n){return n<10?'0'+n:''+n;};
+  document.getElementById('td').textContent=p(now.getHours())+':'+p(m)+':'+p(s);
+}
+
+var lt=0;
+function loop(ts){
+  if(ts-lt>16){tickG();lt=ts;}
+  updateH();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

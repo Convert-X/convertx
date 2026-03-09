@@ -1041,18 +1041,22 @@ function setProgress(pct, label) {
 // LANCZOS — чанкована обробка (не блокує UI)
 // ══════════════════════════════════════════
 function runLanczos() {
-    var scale = parseInt(scaleSelect.value);
+    var scaleInt = parseInt(scaleSelect.value);
     var srcW  = upscaleSourceImg.naturalWidth;
     var srcH  = upscaleSourceImg.naturalHeight;
-    var dstW  = srcW * scale;
-    var dstH  = srcH * scale;
+    var dstW  = srcW * scaleInt;
+    var dstH  = srcH * scaleInt;
 
-    // Обмеження для мобілки
-    if (dstW * dstH > 16000000) {
-        setProgress(0, 'Зображення задто велике для Lanczos, спробуй x2');
-        upscaleBtn.disabled = false;
-        return;
+    // Обмежуємо вихід до 2K — більше крашає браузер
+    var MAX_OUT = 2048;
+    if (dstW > MAX_OUT || dstH > MAX_OUT) {
+        var ratio = Math.min(MAX_OUT / srcW, MAX_OUT / srcH);
+        dstW = Math.round(srcW * ratio);
+        dstH = Math.round(srcH * ratio);
+        setProgress(5, 'Обмежено до ' + dstW + 'x' + dstH);
     }
+    // Реальний scale для Lanczos маппінгу (може бути float!)
+    var scale = dstW / srcW;
 
     setProgress(10, 'Зчитування пікселів...');
 
@@ -1067,7 +1071,7 @@ function runLanczos() {
     var dstData = dstCtx.createImageData(dstW, dstH);
     var dst     = dstData.data;
 
-    var LOBES = 2; // Lanczos-2 — швидше ніж 3, якість майже та сама
+    var LOBES = 3; // Lanczos-3 — чіткіші краї
     function kernel(x) {
         if (x === 0) return 1;
         if (Math.abs(x) >= LOBES) return 0;
@@ -1075,7 +1079,7 @@ function runLanczos() {
         return (LOBES * Math.sin(px) * Math.sin(px / LOBES)) / (px * px);
     }
 
-    var CHUNK = 40; // рядків за кадр
+    var CHUNK = 32;
     var dy = 0;
 
     function processChunk() {
@@ -1109,22 +1113,48 @@ function runLanczos() {
             }
         }
 
-        var pct = 10 + Math.round((dy / dstH) * 85);
-        setProgress(pct, 'Lanczos: ' + Math.round(dy/dstH*100) + '%');
+        var pct = 10 + Math.round((dy / dstH) * 75);
+        setProgress(pct, 'Lanczos-3: ' + Math.round(dy/dstH*100) + '%');
 
         if (dy < dstH) {
             requestAnimationFrame(processChunk);
         } else {
             dstCtx.putImageData(dstData, 0, 0);
-            finishUpscale('lanczos_' + scale + 'x');
+            setProgress(88, 'Sharpening...');
+            requestAnimationFrame(function() { applyUnsharpMask(dstCtx, dstW, dstH, scale); });
         }
     }
 
     requestAnimationFrame(processChunk);
 }
 
+// ── Unsharp Mask після Lanczos ──
+function applyUnsharpMask(ctx, w, h, scale) {
+    var amount = scale >= 4 ? 1.1 : scale >= 3 ? 0.9 : 0.7;
+    var radius = scale >= 4 ? 1.5 : scale >= 3 ? 1.2 : 1.0;
+
+    var blur = document.createElement('canvas');
+    blur.width = w; blur.height = h;
+    var bCtx = blur.getContext('2d');
+    bCtx.filter = 'blur(' + radius + 'px)';
+    bCtx.drawImage(ctx.canvas, 0, 0);
+    bCtx.filter = 'none';
+
+    var orig    = ctx.getImageData(0, 0, w, h);
+    var blurred = bCtx.getImageData(0, 0, w, h);
+    var o = orig.data, bl = blurred.data;
+
+    for (var i = 0; i < o.length - 1; i += 4) {
+        o[i]   = Math.min(255, Math.max(0, (o[i]   + amount * (o[i]   - bl[i])   + 0.5)|0));
+        o[i+1] = Math.min(255, Math.max(0, (o[i+1] + amount * (o[i+1] - bl[i+1]) + 0.5)|0));
+        o[i+2] = Math.min(255, Math.max(0, (o[i+2] + amount * (o[i+2] - bl[i+2]) + 0.5)|0));
+    }
+    ctx.putImageData(orig, 0, 0);
+    finishUpscale('lanczos3_sharp_' + scale + 'x');
+}
+
 // ══════════════════════════════════════════
-// AI — TF.js bicubic (справжній bicubic)
+// AI — TF.js bicubic + sharpening conv
 // ══════════════════════════════════════════
 function runAI() {
     if (typeof tf === 'undefined') {
@@ -1139,15 +1169,15 @@ function runAI() {
     var dstW  = srcW * scale;
     var dstH  = srcH * scale;
 
-    setProgress(15, 'Підготовка тензору...');
-
-    // Обмеження — TF.js на мобілці їсть пам\'ять
-    if (srcW * srcH > 2000 * 2000) {
-        setProgress(0, 'Зображення задто велике для AI, використовую Lanczos');
-        upscaleBtn.disabled = false;
-        setTimeout(runLanczos, 500);
-        return;
+    // Обмежуємо вихід до 4K
+    var MAX_OUT_AI = 2048;
+    if (dstW > MAX_OUT_AI || dstH > MAX_OUT_AI) {
+        var ratioAI = Math.min(MAX_OUT_AI / srcW, MAX_OUT_AI / srcH);
+        dstW = Math.round(srcW * ratioAI);
+        dstH = Math.round(srcH * ratioAI);
     }
+
+    setProgress(10, 'Підготовка...');
 
     try {
         tf.engine().startScope();
@@ -1156,21 +1186,35 @@ function runAI() {
         srcCanvas.width = srcW; srcCanvas.height = srcH;
         srcCanvas.getContext('2d').drawImage(upscaleSourceImg, 0, 0);
 
-        setProgress(35, 'TF.js bicubic обробка...');
+        setProgress(30, 'Bicubic upscale...');
+        var tensor   = tf.browser.fromPixels(srcCanvas).toFloat();
+        var expanded = tensor.expandDims(0);
+        var resized  = tf.image.resizeBicubic(expanded, [dstH, dstW], true); // [1,H,W,3]
 
-        var tensor   = tf.browser.fromPixels(srcCanvas);
-        var expanded = tensor.expandDims(0).toFloat();
-        var resized  = tf.image.resizeBicubic(expanded, [dstH, dstW], true);
+        setProgress(55, 'Edge sharpening...');
+
+        // Unsharp mask через свортку — kernel: centre=5, cross=-1
+        var sharpenK = tf.tensor4d(
+            [ 0,  -1,   0,
+             -1,   5,  -1,
+              0,  -1,   0],
+            [3, 3, 1, 1]
+        );
+        // Обробляємо кожен канал окремо
+        var chans = tf.split(resized, 3, 3); // [1,H,W,1] x3
+        var sharpened = chans.map(function(ch) {
+            return tf.conv2d(ch, sharpenK, 1, 'same').clipByValue(0, 255);
+        });
+        var result = tf.concat(sharpened, 3); // [1,H,W,3]
 
         upscaleCanvas.width  = dstW;
         upscaleCanvas.height = dstH;
+        setProgress(80, 'Запис результату...');
 
-        setProgress(75, 'Запис результату...');
-
-        var squeezed = resized.squeeze().clipByValue(0, 255).cast('int32');
+        var squeezed = result.squeeze().cast('int32');
         tf.browser.toPixels(squeezed, upscaleCanvas).then(function() {
             tf.engine().endScope();
-            finishUpscale('ai_bicubic_' + scale + 'x');
+            finishUpscale('ai_sharp_' + scale + 'x');
         }).catch(function(err) {
             tf.engine().endScope();
             setProgress(0, 'Помилка AI, переключаю на Lanczos...');
@@ -1178,6 +1222,7 @@ function runAI() {
         });
 
     } catch(err) {
+        console.error(err);
         setProgress(0, 'Помилка AI, переключаю на Lanczos...');
         setTimeout(runLanczos, 500);
     }

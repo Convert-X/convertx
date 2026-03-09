@@ -761,8 +761,22 @@
                 await ensureModel();
                 setProgress(80, t('processing'));
 
+                // Обмежуємо розмір — великі зображення крашають canvas
+                var MAX_PX = 2048;
+                var bmp0 = await createImageBitmap(file);
+                var srcW = bmp0.width, srcH = bmp0.height;
+                var scale = Math.min(1, MAX_PX / Math.max(srcW, srcH));
+                var drawW = Math.round(srcW * scale);
+                var drawH = Math.round(srcH * scale);
+                var resCanvas = document.createElement('canvas');
+                resCanvas.width = drawW; resCanvas.height = drawH;
+                resCanvas.getContext('2d').drawImage(bmp0, 0, 0, drawW, drawH);
+                bmp0.close();
+                var resizedBlob = await new Promise(function(res) { resCanvas.toBlob(res, file.type || 'image/png'); });
+                var origUrl2 = URL.createObjectURL(resizedBlob);
+
                 // Завантажуємо зображення через RawImage
-                var image = await RawImage.fromURL(origUrl);
+                var image = await RawImage.fromURL(origUrl2);
 
                 // Процесуємо — авто конфіг з HF
                 var { pixel_values } = await bgProcessor(image);
@@ -795,7 +809,7 @@
                 var outCanvas = document.createElement('canvas');
                 outCanvas.width = image.width; outCanvas.height = image.height;
                 var ctx = outCanvas.getContext('2d');
-                ctx.drawImage(await createImageBitmap(file), 0, 0);
+                ctx.drawImage(await createImageBitmap(resizedBlob), 0, 0);
 
                 // Масштабуємо маску до розміру зображення
                 var scCanvas = document.createElement('canvas');
