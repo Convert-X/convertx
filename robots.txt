@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://convert-x.github.io/convertx/sitemap.xml
