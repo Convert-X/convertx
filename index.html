@@ -87,7 +87,7 @@
         </ul>
 
         <div class="sidebar-footer">
-            <span class="version">v0.3.1 <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4fffb0;vertical-align:middle;margin-left:2px;" title="cache OK"></span></span>
+            <span class="version">v0.3.2 <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4fffb0;vertical-align:middle;margin-left:2px;" title="cache OK"></span></span>
             <span class="footer-hint" data-i18n="footer_hint">Більше форматів — скоро</span>
             <div class="privacy-badge" id="privacyBadge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -107,6 +107,7 @@
             </div>
            <button id="ppBtn" onclick="document.getElementById('ppModal').style.display='flex'" style="background:none;border:none;color:rgba(200,150,50,.55);font-size:.72rem;cursor:pointer;padding:6px 0 0;letter-spacing:.03em;text-decoration:underline dotted;text-underline-offset:3px;">Privacy Policy</button>
         </div>
+        <button id="mobilePPBtn" onclick="document.getElementById('ppModal').style.display='flex'">Privacy Policy</button>
     </nav>
 
     <!-- ===== MOBILE BG CLOCK ===== -->
@@ -132,6 +133,7 @@
                 </svg>
                 <span>Підтримати ☕</span>
             </a>
+            <button id="themeToggle" title="Toggle theme" aria-label="Toggle theme"></button>
             <div class="lang-switcher" id="langSwitcher">
                 <button class="lang-btn" id="langToggle" title="Language">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -543,7 +545,7 @@
                 <p class="section-desc" data-i18n="convert_desc">Перетворюй JPG, PNG, WEBP без втрати якості</p>
             </div>
 
-            <div class="drop-zone" id="dropZone">
+            <div class="drop-zone" id="dropZone" onclick="if(event.target===this||event.target.closest('.drop-zone')){document.getElementById('fileInput').click()}">
                 <div class="drop-animation">
                     <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
                         <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2"/>
@@ -606,7 +608,7 @@
                 <p class="section-desc" data-i18n="enhance_desc">Brightness, contrast, sharpness — all in one place</p>
             </div>
 
-            <div class="drop-zone" id="dropZoneEnhance">
+            <div class="drop-zone" id="dropZoneEnhance" onclick="if(event.target===this||event.target.closest('.drop-zone')){document.getElementById('fileInputEnhance').click()}">
                 <div class="drop-animation">
                     <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
                         <circle cx="32" cy="32" r="12" stroke="currentColor" stroke-width="2"/>
@@ -689,7 +691,7 @@
                 <span data-i18n="ai_notice">First run downloads the model (~5MB). Then cached in browser. Processing may take 10–60s depending on image size.</span>
             </div>
 
-            <div class="drop-zone" id="dropZoneUpscale">
+            <div class="drop-zone" id="dropZoneUpscale" onclick="if(event.target===this||event.target.closest('.drop-zone')){document.getElementById('fileInputUpscale').click()}">
                 <div class="drop-animation">
                     <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
                         <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2"/>
@@ -756,7 +758,7 @@
                 <p class="section-desc" data-i18n="compress_desc">Зменшуй розмір зображень без помітної втрати якості</p>
             </div>
 
-            <div class="drop-zone" id="dropZoneCompress">
+            <div class="drop-zone" id="dropZoneCompress" onclick="if(event.target===this||event.target.closest('.drop-zone')){document.getElementById('fileInputCompress').click()}">
                 <div class="drop-animation">
                     <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
                         <rect x="8" y="8" width="48" height="48" rx="4" stroke="currentColor" stroke-width="2"/>
@@ -797,7 +799,7 @@
                 </div>
                 <div class="progress-wrap" id="compressProgress" hidden>
                     <div class="progress-bar"><div class="progress-fill" id="compressProgressFill"></div></div>
-                    <span class="progress-label" id="compressProgressLabel">Стиснення...</span>
+                    <span class="progress-label" id="compressProgressLabel" data-i18n="prog_processing">Обробка...</span>
                 </div>
             </div>
         </section>
@@ -828,7 +830,7 @@
 
             <!-- IMG → PDF -->
             <div id="pdfImgMode">
-                <div class="drop-zone" id="dropZonePdf">
+                <div class="drop-zone" id="dropZonePdf" onclick="if(event.target===this||event.target.closest('.drop-zone')){document.getElementById('fileInputPdf').click()}">
                     <div class="drop-animation">
                         <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
                             <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2"/>
@@ -855,7 +857,7 @@
                 </div>
                 <div class="progress-wrap" id="pdfProgress" hidden>
                     <div class="progress-bar"><div class="progress-fill" id="pdfProgressFill"></div></div>
-                    <span class="progress-label" id="pdfProgressLabel">Генерація PDF...</span>
+                    <span class="progress-label" id="pdfProgressLabel" data-i18n="prog_processing">Обробка...</span>
                 </div>
             </div>
 
@@ -884,7 +886,7 @@
                 <span data-i18n="bgremove_notice">Перший запуск завантажує модель (~40 МБ). Далі кешується у браузері. Обробка може зайняти 5–30 сек.</span>
             </div>
 
-            <div class="drop-zone" id="dropZoneBgremove">
+            <div class="drop-zone" id="dropZoneBgremove" onclick="if(event.target===this||event.target.closest('.drop-zone')){document.getElementById('fileInputBgremove').click()}">
                 <div class="drop-animation">
                     <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
                         <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2"/>
@@ -903,7 +905,7 @@
 
             <div class="progress-wrap" id="bgremoveProgress" hidden>
                 <div class="progress-bar"><div class="progress-fill" id="bgremoveProgressFill"></div></div>
-                <span class="progress-label" id="bgremoveProgressLabel">Processing...</span>
+                <span class="progress-label" id="bgremoveProgressLabel" data-i18n="prog_processing">Processing...</span>
             </div>
 
             <!-- BA Slider (з'являється після обробки) -->

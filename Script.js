@@ -1,3 +1,29 @@
+
+// ── THEME SYSTEM ─────────────────────────────────
+(function() {
+    var saved = localStorage.getItem('cx-theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var isDark = saved ? saved === 'dark' : prefersDark;
+    if (!isDark) document.documentElement.classList.add('light');
+})();
+
+function toggleTheme() {
+    var isLight = document.documentElement.classList.toggle('light');
+    localStorage.setItem('cx-theme', isLight ? 'light' : 'dark');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+
+    // Слухати системну тему
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+        if (!localStorage.getItem('cx-theme')) {
+            document.documentElement.classList.toggle('light', !e.matches);
+        }
+    });
+});
+
 /* =============================================
    ConvertX — Script.js
    Конвертація + Покращення + Апскейл + i18n
@@ -33,6 +59,11 @@ var TRANSLATIONS = {
         btn_convert:    'Convert',
         btn_download:   'Download',
         prog_processing:'Processing...',
+        prog_reading:'Reading file...',
+        prog_converting:'Converting...',
+        prog_pdf:'Generating PDF...',
+        prog_compressing:'Compressing...',
+        prog_done:'Done!',
         // Enhance
         enhance_title:  'Image <span class="accent">Enhancement</span>',
         enhance_desc:   'Brightness, contrast, sharpness — all in one place',
@@ -108,6 +139,11 @@ var TRANSLATIONS = {
         btn_convert:    'Конвертувати',
         btn_download:   'Завантажити',
         prog_processing:'Обробка...',
+        prog_reading:'Зчитування файлу...',
+        prog_converting:'Конвертація...',
+        prog_pdf:'Генерація PDF...',
+        prog_compressing:'Стиснення...',
+        prog_done:'Готово!',
         // Enhance
         enhance_title:  'Покращення <span class="accent">якості</span>',
         enhance_desc:   'Яскравість, контраст, різкість і насиченість — все в одному місці',
@@ -183,6 +219,11 @@ var TRANSLATIONS = {
         btn_convert:    'Konvertieren',
         btn_download:   'Herunterladen',
         prog_processing:'Verarbeitung...',
+        prog_reading:'Datei lesen...',
+        prog_converting:'Konvertieren...',
+        prog_pdf:'PDF erstellen...',
+        prog_compressing:'Komprimieren...',
+        prog_done:'Fertig!',
         // Enhance
         enhance_title:  'Bild <span class="accent">verbessern</span>',
         enhance_desc:   'Helligkeit, Kontrast, Schärfe — alles an einem Ort',
@@ -277,6 +318,7 @@ langDropdown.addEventListener('click', function(e) { e.stopPropagation(); });
 document.querySelectorAll('.lang-option').forEach(function(opt) {
     opt.addEventListener('click', function() {
         applyLang(this.dataset.lang);
+        localStorage.setItem('cx-lang', this.dataset.lang);
         langDropdown.hidden = true;
     });
 });
@@ -416,7 +458,7 @@ convertBtn.addEventListener('click', function() {
     // Показати прогрес
     progressWrap.hidden = false;
     progressFill.style.width = '0%';
-    progressLabel.textContent = 'Зчитування файлу...';
+    progressLabel.textContent = (TRANSLATIONS[currentLang]||TRANSLATIONS['en']).prog_reading||'Reading...';
     convertBtn.disabled = true;
     downloadBtn.hidden = true;
 
@@ -431,7 +473,7 @@ convertBtn.addEventListener('click', function() {
 
     reader.onload = function(e) {
         progressFill.style.width = '50%';
-        progressLabel.textContent = 'Конвертація...';
+        progressLabel.textContent = (TRANSLATIONS[currentLang]||TRANSLATIONS['en']).prog_converting||'Converting...';
 
         var img = new Image();
         img.onload = function() {
@@ -840,7 +882,7 @@ makePdfBtn.addEventListener('click', function() {
     var jsPDF = window.jspdf.jsPDF;
     pdfProgress.hidden = false;
     pdfProgressFill.style.width = '0%';
-    pdfProgressLabel.textContent = 'Генерація PDF...';
+    pdfProgressLabel.textContent = TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang]['prog_processing'] || 'Processing...';
     makePdfBtn.disabled = true;
     downloadPdfBtn.hidden = true;
 
@@ -855,7 +897,7 @@ makePdfBtn.addEventListener('click', function() {
             downloadPdfBtn.download = 'convertx_export.pdf';
             downloadPdfBtn.hidden   = false;
             pdfProgressFill.style.width = '100%';
-            pdfProgressLabel.textContent = 'Готово! ' + pdfFiles.length + ' стор.';
+            pdfProgressLabel.textContent = (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang]['done'] || '✓ Done!') + ' ' + pdfFiles.length + ' ' + (currentLang === 'uk' ? 'стор.' : currentLang === 'de' ? 'S.' : 'p.');
             makePdfBtn.disabled = false;
             setTimeout(function() { pdfProgress.hidden = true; }, 2000);
             return;
@@ -863,7 +905,7 @@ makePdfBtn.addEventListener('click', function() {
 
         var pct = Math.round((index / pdfFiles.length) * 90);
         pdfProgressFill.style.width = pct + '%';
-        pdfProgressLabel.textContent = 'Обробка ' + (index + 1) + ' / ' + pdfFiles.length + '...';
+        pdfProgressLabel.textContent = ((TRANSLATIONS[currentLang]||TRANSLATIONS['en']).prog_processing||'Processing...') + ' ' + (index+1) + ' / ' + pdfFiles.length;
 
         var reader = new FileReader();
         reader.onload = function(e) {
@@ -1338,4 +1380,12 @@ function initBASlider() {
 }
 
 // ── ІНІЦІАЛІЗАЦІЯ МОВИ (після всіх translations) ─
-applyLang('en');
+// Автовизначення мови
+(function() {
+    var saved = localStorage.getItem('cx-lang');
+    if (saved && TRANSLATIONS[saved]) { applyLang(saved); return; }
+    var nav = (navigator.language || navigator.userLanguage || 'en').slice(0,2).toLowerCase();
+    if (nav === 'uk') applyLang('uk');
+    else if (nav === 'de') applyLang('de');
+    else applyLang('en');
+})();
