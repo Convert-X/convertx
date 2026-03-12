@@ -29,6 +29,9 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="ConvertX — Free Image Converter">
     <meta name="twitter:description" content="Convert images instantly in your browser. No uploads, 100% private.">
+    <meta property="og:image" content="https://convert-x.github.io/convertx/favicon.png">
+    <meta name="twitter:image" content="https://convert-x.github.io/convertx/favicon.png">
+
 
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -102,6 +105,7 @@
                     </div>
                 </div>
             </div>
+           <button id="ppBtn" onclick="document.getElementById('ppModal').style.display='flex'" style="background:none;border:none;color:rgba(200,150,50,.55);font-size:.72rem;cursor:pointer;padding:6px 0 0;letter-spacing:.03em;text-decoration:underline dotted;text-underline-offset:3px;">Privacy Policy</button>
         </div>
     </nav>
 
@@ -1297,5 +1301,44 @@ function loop(ts){
 }
 requestAnimationFrame(loop);
   </script>
+    <!-- ===== PRIVACY POLICY MODAL ===== -->
+<div id="ppModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#1e1208;border:1px solid rgba(232,160,48,.25);border-radius:16px;max-width:620px;width:100%;max-height:85vh;overflow-y:auto;padding:36px 40px;position:relative;box-shadow:0 0 60px rgba(0,0,0,.6);">
+    <button onclick="document.getElementById('ppModal').style.display='none'" style="position:absolute;top:16px;right:20px;background:none;border:none;color:rgba(255,255,255,.4);font-size:1.4rem;cursor:pointer;line-height:1;">✕</button>
+    <h2 style="font-family:inherit;font-size:1.3rem;color:#e8a030;margin:0 0 4px;">Privacy Policy</h2>
+    <p style="font-size:.75rem;color:rgba(255,255,255,.3);margin:0 0 24px;">Last updated: March 11, 2026</p>
+    <style>
+      #ppModal h3{font-size:.95rem;color:#e8a030;margin:20px 0 6px;font-weight:600;}
+      #ppModal p,#ppModal li{font-size:.85rem;color:rgba(255,255,255,.7);line-height:1.65;margin:0 0 8px;}
+      #ppModal ul{padding-left:18px;margin:0 0 8px;}
+      #ppModal a{color:#e8a030;text-decoration:none;}
+      #ppModal .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,255,176,.08);border:1px solid rgba(79,255,176,.2);border-radius:8px;padding:8px 14px;font-size:.82rem;color:#4fffb0;margin:10px 0 16px;}
+    </style>
+    <div class="badge">🔒 ConvertX processes everything locally — no files ever leave your device.</div>
+    <h3>1. What We Collect</h3>
+    <p>ConvertX does <strong>not</strong> collect, store, or transmit any files you process. All operations happen entirely within your browser. No file data is sent to any server.</p>
+    <p>We do not collect:</p>
+    <ul>
+      <li>Uploaded files or images</li>
+      <li>Personal information or account data</li>
+      <li>IP addresses or location data</li>
+      <li>Usage history or logs</li>
+    </ul>
+    <h3>2. Cookies & Local Storage</h3>
+    <p>ConvertX uses browser cache solely to store AI model weights (~40 MB) so they don't re-download each visit. No tracking cookies are used.</p>
+    <h3>3. Third-Party Services</h3>
+    <ul>
+      <li><strong>jsDelivr / cdnjs</strong> — JavaScript libraries (no tracking)</li>
+      <li><strong>Google Fonts</strong> — typography (Google may log requests per their <a href="https://policies.google.com/privacy" target="_blank">Privacy Policy</a>)</li>
+    </ul>
+    <p>If Google AdSense is enabled in future, this policy will be updated.</p>
+    <h3>4. Contact</h3>
+    <p>Questions? Open an issue on <a href="https://github.com/Convert-X/convertx" target="_blank">GitHub</a>.</p>
+  </div>
+</div>
+<script>
+  document.getElementById('ppModal').addEventListener('click',function(e){if(e.target===this)this.style.display='none';});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')document.getElementById('ppModal').style.display='none';});
+</script>
 </body>
 </html>
