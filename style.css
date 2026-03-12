@@ -19,20 +19,93 @@
 
 /* ── LIGHT THEME ── */
 .light {
-    --bg:         #f5f0e8;
-    --bg2:        #ede7d9;
-    --sidebar-bg: #e8e0d0;
-    --divider:    rgba(160,100,20,0.15);
-    --accent:     #b06010;
-    --accent-dim: #8a4a08;
-    --btn-text:   #f5f0e8;
-    --text:       #2a1f10;
-    --text-dim:   #6b5030;
-    --text-muted: #9a7850;
-    --drop-bg:    rgba(235,225,205,0.7);
-    --drop-border:rgba(160,100,20,0.22);
-    --input-bg:   #ede7d9;
-    --card-bg:    #ede7d9;
+    /* Основний фон — чистий теплий білий */
+    --bg:         #fafaf8;
+    --bg2:        #f2f0eb;
+    --sidebar-bg: #ffffff;
+    /* Акценти — темно-помаранчевий замість яскравого золотого */
+    --accent:     #c47a20;
+    --accent-dim: #8a5510;
+    --btn-text:   #ffffff;
+    /* Текст — майже чорний */
+    --text:       #1a1510;
+    --text-dim:   #5a4830;
+    --text-muted: #8a7560;
+    /* Поверхні */
+    --surface:    #ffffff;
+    --surface2:   #f2f0eb;
+    --border:     rgba(180,140,80,0.2);
+    --divider:    rgba(180,140,80,0.15);
+    /* Компоненти */
+    --drop-bg:    #ffffff;
+    --drop-border:rgba(180,130,60,0.3);
+    --input-bg:   #f7f5f0;
+    --card-bg:    #ffffff;
+    --transition: .2s;
+}
+
+/* Тіні для підняття елементів */
+.light .section-card,
+.light .file-info-bar {
+    box-shadow: 0 1px 8px rgba(0,0,0,.06);
+}
+.light nav {
+    border-right: 1px solid rgba(180,140,80,.15);
+    box-shadow: 2px 0 12px rgba(0,0,0,.04);
+}
+/* Активний nav item */
+.light .nav-item.active {
+    background: rgba(196,122,32,.1);
+}
+.light .nav-item:hover {
+    background: rgba(196,122,32,.07);
+}
+/* Drop zone */
+.light .drop-zone {
+    background: var(--drop-bg);
+    border: 2px dashed rgba(196,122,32,.4);
+}
+.light .drop-zone:hover {
+    border-color: var(--accent);
+    border-style: solid;
+    background: rgba(196,122,32,.04);
+    box-shadow: 0 0 0 3px rgba(196,122,32,.08);
+}
+/* Topbar */
+.light #topbar {
+    background: rgba(255,255,255,.9);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(180,140,80,.12);
+}
+/* Кнопки Convert — темний текст не підходить на кольоровій кнопці */
+.light .btn-convert {
+    background: var(--accent);
+    color: #fff;
+}
+.light .btn-download {
+    background: #2a9d5c;
+    color: #fff;
+}
+/* Sidebar footer */
+.light .sidebar-footer {
+    border-top: 1px solid rgba(180,140,80,.15);
+}
+/* Range input */
+.light input[type=range] {
+    accent-color: var(--accent);
+}
+/* Select */
+.light select {
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--drop-border);
+}
+/* Progress bar */
+.light .progress-bar {
+    background: rgba(180,140,80,.15);
+}
+.light .progress-fill {
+    background: var(--accent);
 }
 
 /* ── RESET ── */
@@ -282,7 +355,7 @@ body {
 
 /* ── DROP ZONE ── */
 .drop-zone {
-    border: 1.5px dashed var(--border);
+    border: 2px dashed rgba(232,160,48,.35);
     border-radius: 14px;
     background: var(--surface);
     padding: 40px 24px;
@@ -297,8 +370,10 @@ body {
 }
 
 .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent-dim);
-    background: var(--surface2);
+    border-color: var(--accent);
+    border-style: solid;
+    background: rgba(232,160,48,.04);
+    box-shadow: 0 0 0 3px rgba(232,160,48,.08);
 }
 
 .drop-zone.drag-over {
@@ -508,12 +583,13 @@ body {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 4px;
+    height: 5px;
     border-radius: 4px;
-    background: var(--surface2);
+    background: linear-gradient(to right, var(--accent) var(--val, 50%), rgba(232,160,48,.15) var(--val, 50%));
     outline: none;
     cursor: pointer;
-    border: 1px solid var(--border);
+    border: none;
+    box-shadow: inset 0 0 0 1px rgba(232,160,48,.2);
 }
 
 .styled-range::-webkit-slider-thumb {
@@ -1706,4 +1782,334 @@ body {
         width: 100%;
         text-align: left;
     }
+}
+
+/* ── CLOCK HIDDEN IN LIGHT THEME ── */
+.light #deco-panel { display: none; }
+
+/* ── AUDIO SECTION ── */
+#section-audio .select-input {
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--drop-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: .9rem;
+    width: 100%;
+    cursor: pointer;
+}
+#audioMp3QualityGroup { margin-top: 12px; }
+
+/* ── CUSTOM CURSOR ── */
+/* Базовий курсор на все */
+html, body, *, *::before, *::after {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M4 2 L4 16 L8 12 L11 18 L13 17 L10 11 L16 11 Z' fill='%23e8a030' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E") 4 2, auto !important;
+}
+/* Клікабельні — коло з точкою */
+a, a *, button, button *, [role=button],
+input, input[type=range], input[type=range]::-webkit-slider-thumb,
+input[type=range]::-moz-range-thumb,
+select, select *,
+label, label *,
+.nav-item, .nav-item *,
+.drop-zone, .drop-zone *,
+.lang-btn, .lang-option, .lang-switcher button,
+.btn-convert, .btn-download, .btn-choose, .btn-reset,
+.btn-primary, .btn-secondary, .btn-primary *, .btn-secondary *,
+.bmac-btn, .bmac-btn *,
+.method-tab, .pdf-mode-btn,
+.privacy-badge, .privacy-badge *,
+[id$="Btn"], [id$="btn"],
+#ppBtn, #mobilePPBtn, #themeToggle, #hamburger,
+.section-card button, .controls-grid button,
+.lang-dropdown *, #clockPopup {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='7' fill='none' stroke='%23e8a030' stroke-width='2'/%3E%3Ccircle cx='10' cy='10' r='3' fill='%23e8a030'/%3E%3C/svg%3E") 10 10, pointer !important;
+}
+/* Годинник — системний pointer */
+#clockScene, #clockScene * {
+    cursor: pointer !important;
+}
+#deco-mobile-bg {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+#deco-mobile-bg * {
+    cursor: pointer !important;
+}
+/* Тач-девайси — прибрати кастомний */
+@media (hover: none) and (pointer: coarse) {
+    html, body, *, *::before, *::after { cursor: auto !important; }
+    a, button, input, select, label, .nav-item,
+    .drop-zone, .btn-convert, .btn-download, .btn-choose,
+    .btn-primary, .btn-secondary { cursor: pointer !important; }
+}
+
+/* ── CLOCK POPUP ANIMATION already in JS inline ── */
+
+/* ── AUDIO SECTION BUTTONS ── */
+#section-audio .btn-convert,
+#section-audio .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: .9rem;
+    border: none;
+    cursor: pointer;
+    transition: opacity .2s;
+}
+#section-audio .btn-convert {
+    background: var(--accent);
+    color: var(--btn-text);
+}
+#section-audio .btn-download {
+    background: #2a9d5c;
+    color: #fff;
+}
+#section-audio .select-input {
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--drop-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: .9rem;
+    width: 100%;
+}
+#section-audio .control-label {
+    font-size: .82rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    display: block;
+}
+#section-audio .convert-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 16px;
+}
+#section-audio .convert-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+/* ══════════════════════════════════════════
+   MOBILE FIXES v0.3.2
+   ══════════════════════════════════════════ */
+
+/* Прибрати кастомний курсор на тач-девайсах */
+@media (hover: none) and (pointer: coarse) {
+    *, *::before, *::after { cursor: auto !important; }
+    a, button, [role=button], label, select,
+    .nav-item, .drop-zone, .btn-convert,
+    .btn-download, .btn-choose { cursor: pointer !important; }
+}
+
+/* ── Кнопки на мобілці — повна ширина ── */
+@media (max-width: 600px) {
+    .btn-convert,
+    .btn-download {
+        width: 100%;
+        justify-content: center;
+    }
+    #section-audio .convert-actions {
+        flex-direction: column;
+    }
+    #section-audio .btn-convert,
+    #section-audio .btn-download {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Topbar на маленьких екранах */
+    .bmac-btn span { display: none; }
+    .bmac-btn { padding: 6px 10px; min-width: unset; }
+
+    /* Drop zone менший паддінг */
+    .drop-zone { padding: 24px 12px; }
+
+    /* Section title менший */
+    .section-title { font-size: 1.4rem; }
+
+    /* Privacy policy modal — повна ширина */
+    #ppModal > div { padding: 24px 20px; }
+
+    /* Toggle теми — тримати видимим */
+    #themeToggle { flex-shrink: 0; }
+
+    /* Audio controls */
+    #section-audio .convert-controls { flex-direction: column; }
+}
+
+/* ── Годинник на мобілці — через deco-mobile-bg ── */
+/* clockScene завжди клікабельний */
+
+/* ── BUTTON BORDERS ── */
+.btn-convert {
+    border: 2px solid transparent !important;
+    outline: none;
+}
+.btn-download {
+    border: 2px solid rgba(42,157,92,.5) !important;
+}
+.btn-choose {
+    border: 1px solid var(--accent) !important;
+}
+.btn-primary {
+    border: 2px solid transparent !important;
+}
+.btn-secondary {
+    border: 1px solid var(--border) !important;
+}
+.btn-reset {
+    border: 1px solid rgba(255,100,100,.2) !important;
+}
+.btn-convert:hover { border-color: rgba(255,255,255,.2) !important; }
+.light .btn-secondary { border-color: rgba(180,130,60,.3) !important; }
+.light .btn-choose { border-color: var(--accent) !important; }
+
+/* ── PRIVACY POLICY MODAL ── */
+#ppModalInner {
+    background: var(--bg2);
+    border: 1px solid var(--divider);
+    border-radius: 16px;
+    max-width: 620px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 36px 40px;
+    position: relative;
+    box-shadow: 0 0 60px rgba(0,0,0,.4);
+}
+#ppCloseBtn {
+    position: absolute;
+    top: 16px; right: 20px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    line-height: 1;
+    padding: 4px 8px;
+}
+#ppCloseBtn:hover { color: var(--text); }
+#ppModal h3 { font-size:.95rem; color: var(--accent); margin:20px 0 6px; font-weight:600; }
+#ppModal p, #ppModal li { font-size:.85rem; color: var(--text-dim); line-height:1.65; margin:0 0 8px; }
+#ppModal ul { padding-left:18px; margin:0 0 8px; }
+#ppModal a { color: var(--accent); text-decoration:none; }
+#ppModal a:hover { text-decoration:underline; }
+#ppModal h2 { color: var(--accent); }
+#ppModal .badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(79,255,176,.08);
+    border:1px solid rgba(79,255,176,.2);
+    border-radius:8px; padding:8px 14px;
+    font-size:.82rem; color:#4fffb0; margin:10px 0 16px;
+}
+.light #ppModal .badge { background: rgba(42,157,92,.08); border-color: rgba(42,157,92,.3); color: #2a7a4a; }
+
+/* ── DIGITAL SIDEBAR CLOCK ── */
+.sidebar-digiclock {
+    font-family: 'Courier New', 'Lucida Console', monospace;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: .18em;
+    color: var(--accent);
+    text-shadow: 0 0 8px rgba(232,160,48,.5), 0 0 20px rgba(232,160,48,.2);
+    background: rgba(232,160,48,.06);
+    border: 1px solid rgba(232,160,48,.15);
+    border-radius: 6px;
+    padding: 4px 10px;
+    margin-top: 6px;
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
+    min-width: 84px;
+    text-align: center;
+}
+.light .sidebar-digiclock {
+    color: #c47a20;
+    text-shadow: 0 0 8px rgba(196,122,32,.3);
+    background: rgba(196,122,32,.07);
+    border-color: rgba(196,122,32,.2);
+}
+
+/* ── GLOBAL RANGE SLIDER STYLE ── */
+input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 5px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--accent) 90%, rgba(232,160,48,.15) 90%);
+    outline: none;
+    border: none;
+    box-shadow: inset 0 0 0 1px rgba(232,160,48,.2);
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,160,48,.2), 0 2px 6px rgba(0,0,0,.3);
+    transition: box-shadow .2s, transform .2s;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 6px rgba(232,160,48,.25), 0 2px 6px rgba(0,0,0,.3);
+    transform: scale(1.15);
+}
+input[type=range]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    box-shadow: 0 0 0 3px rgba(232,160,48,.2);
+}
+input[type=range]::-moz-range-track {
+    height: 5px;
+    background: linear-gradient(to right, var(--accent) 90%, rgba(232,160,48,.15) 90%);
+    border-radius: 4px;
+}
+.light input[type=range] {
+    background: linear-gradient(to right, var(--accent) 90%, rgba(196,122,32,.15) 90%);
+    box-shadow: inset 0 0 0 1px rgba(196,122,32,.25);
+}
+
+/* ── MOBILE DROP ZONE ── */
+@media (max-width: 600px) {
+    .drop-zone {
+        padding: 28px 14px;
+        border-width: 2px;
+    }
+    .drop-icon { width: 36px; height: 36px; }
+    .sidebar-digiclock {
+        font-size: .85rem;
+        padding: 3px 8px;
+        min-width: 70px;
+    }
+}
+
+/* ══ CLOCK — завжди системний pointer, завжди клікабельний ══ */
+#clockScene,
+#clockScene *,
+#deco-mobile-bg,
+#deco-mobile-bg * {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+@media (max-width: 600px) {
+    /* Audio секція */
+    #section-audio .convert-controls { gap: 8px; }
+    #section-audio .convert-actions { flex-direction: column; }
+    #section-audio .btn-convert,
+    #section-audio .btn-download { width: 100%; justify-content: center; }
+    /* Всі секції */
+    .section-card { padding: 16px 12px; }
+    .action-row { flex-direction: column; align-items: stretch; }
+    .action-row .btn-primary,
+    .action-row .btn-secondary { width: 100%; justify-content: center; }
+    /* Повзунки — більший thumb на тачскріні */
+    input[type=range]::-webkit-slider-thumb { width: 22px; height: 22px; }
 }

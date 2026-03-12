@@ -84,10 +84,17 @@
                 </span>
                 <span class="nav-label" data-i18n="nav_bgremove">Видал. фон</span>
             </li>
+            <li class="nav-item" data-section="audio">
+                <span class="nav-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                </span>
+                <span class="nav-label" data-i18n="nav_audio">Аудіо</span>
+            </li>
         </ul>
 
         <div class="sidebar-footer">
             <span class="version">v0.3.2 <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4fffb0;vertical-align:middle;margin-left:2px;" title="cache OK"></span></span>
+            <div id="sidebarClock" class="sidebar-digiclock"></div>
             <span class="footer-hint" data-i18n="footer_hint">Більше форматів — скоро</span>
             <div class="privacy-badge" id="privacyBadge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -131,7 +138,7 @@
                 <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">
                     <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/>
                 </svg>
-                <span>Підтримати ☕</span>
+                <span data-i18n="support_btn">Підтримати ☕</span>
             </a>
             <button id="themeToggle" title="Toggle theme" aria-label="Toggle theme"></button>
             <div class="lang-switcher" id="langSwitcher">
@@ -159,379 +166,65 @@
 
     <!-- ===== CLOCK DECORATION ===== -->
     <div id="deco-panel">
-      <div class="clock-scene">
+      <div class="clock-scene" id="clockScene">
         <div class="clock-glow-bg"></div>
-        <svg id="svg" class="clock-svg" viewBox="0 0 620 620" xmlns="http://www.w3.org/2000/svg">
-<defs>
-  <!-- Light gold face gradient (как на скріншоті — яскравий) -->
-  <radialGradient id="gFace" cx="45%" cy="38%">
-    <stop offset="0%"   stop-color="#fff8cc"/>
-    <stop offset="35%"  stop-color="#f0d060"/>
-    <stop offset="70%"  stop-color="#d4a020"/>
-    <stop offset="100%" stop-color="#b07800"/>
-  </radialGradient>
-
-  <!-- Face outer ring — трохи темніший золотий -->
-  <radialGradient id="gRing" cx="50%" cy="30%">
-    <stop offset="0%"   stop-color="#fce870"/>
-    <stop offset="50%"  stop-color="#c89018"/>
-    <stop offset="100%" stop-color="#8a5c00"/>
-  </radialGradient>
-
-  <!-- Bezel/rim — насичений золотий -->
-  <linearGradient id="gBezel" x1="20%" y1="0%" x2="80%" y2="100%">
-    <stop offset="0%"   stop-color="#fdeea0"/>
-    <stop offset="30%"  stop-color="#e8b828"/>
-    <stop offset="60%"  stop-color="#c08010"/>
-    <stop offset="100%" stop-color="#7a5000"/>
-  </linearGradient>
-
-  <!-- Dark center window for gears -->
-  <radialGradient id="gDark" cx="50%" cy="40%">
-    <stop offset="0%"   stop-color="#1a0c02"/>
-    <stop offset="60%"  stop-color="#0e0600"/>
-    <stop offset="100%" stop-color="#060200"/>
-  </radialGradient>
-
-  <!-- Gear body -->
-  <radialGradient id="gGear" cx="38%" cy="32%">
-    <stop offset="0%"   stop-color="#e8c060"/>
-    <stop offset="55%"  stop-color="#c09020"/>
-    <stop offset="100%" stop-color="#6a4000"/>
-  </radialGradient>
-
-  <!-- Shard gradient -->
-  <linearGradient id="gShard" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%"   stop-color="#fde878"/>
-    <stop offset="45%"  stop-color="#d4a020"/>
-    <stop offset="100%" stop-color="#8a5a00"/>
-  </linearGradient>
-
-  <!-- Crimson for gear accents -->
-  <radialGradient id="gCrim" cx="50%" cy="40%">
-    <stop offset="0%"   stop-color="#a82010"/>
-    <stop offset="100%" stop-color="#3c0800"/>
-  </radialGradient>
-
-  <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-    <feGaussianBlur stdDeviation="3" result="b"/>
-    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter>
-  <filter id="glowHard" x="-80%" y="-80%" width="260%" height="260%">
-    <feGaussianBlur stdDeviation="5" result="b"/>
-    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter>
-  <filter id="redGlow" x="-80%" y="-80%" width="260%" height="260%">
-    <feGaussianBlur stdDeviation="4" result="b"/>
-    <feFlood flood-color="#c01808" flood-opacity=".5" result="c"/>
-    <feComposite in="c" in2="b" operator="in" result="cb"/>
-    <feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter>
-
-  <!-- Clip to face circle -->
-  <clipPath id="faceClip">
-    <circle cx="310" cy="310" r="185"/>
-  </clipPath>
-  <clipPath id="gearClip">
-    <circle cx="310" cy="310" r="108"/>
-  </clipPath>
-
-  <!-- Outer ring segment gradient — amber+gold like original -->
-  <linearGradient id="gOuterSeg" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%"   stop-color="#fde878"/>
-    <stop offset="30%"  stop-color="#d4920c"/>
-    <stop offset="70%"  stop-color="#b07208"/>
-    <stop offset="100%" stop-color="#7a4c00"/>
-  </linearGradient>
-  <!-- Highlight edge on segments -->
-  <linearGradient id="gSegHL" x1="0%" y1="0%" x2="0%" y2="100%">
-    <stop offset="0%"   stop-color="#fef0a0"/>
-    <stop offset="100%" stop-color="#c08010"/>
-  </linearGradient>
-
-  <!-- Outer ring segment fill — amber→gold -->
-  <linearGradient id="gSegFill" x1="15%" y1="0%" x2="85%" y2="100%">
-    <stop offset="0%"   stop-color="#fde070"/>
-    <stop offset="25%"  stop-color="#e8a818"/>
-    <stop offset="60%"  stop-color="#c07808"/>
-    <stop offset="100%" stop-color="#804e00"/>
-  </linearGradient>
-</defs>
-
-<!-- ═══════════════════════════════════ -->
-<!-- OUTER RING — segmented arcs like Zafkiel original -->
-<!-- ═══════════════════════════════════ -->
-<g id="outerRing" style="transform-origin:310px 310px;animation:ringRot 100s linear infinite">
-<g transform="translate(4,5)" opacity=".6">
-  <path d="M 318.72,60.15 L 327.80,67.65 L 337.09,68.51 L 337.87,61.56 A 250,250 0 0,1 385.59,71.70 L 383.48,78.37 L 392.31,81.37 L 403.65,78.20 L 397.28,93.97 L 389.94,87.95 L 381.36,85.05 L 380.45,87.91 A 233,233 0 0,0 335.97,78.45 L 336.31,75.47 L 327.28,74.63 L 318.13,77.14 Z" fill="#7a4800"/>
-  <path d="M 419.59,85.30 L 424.83,95.84 L 432.97,100.41 L 436.51,94.37 A 250,250 0 0,1 462.54,111.93 L 458.27,117.47 L 465.55,123.31 L 477.28,124.21 L 465.91,136.85 L 461.07,128.69 L 453.99,123.02 L 452.16,125.40 A 233,233 0 0,0 427.91,109.03 L 429.42,106.45 L 421.52,102.01 L 412.14,100.58 Z" fill="#7a4800"/>
-  <path d="M 492.84,139.50 L 493.95,151.22 L 499.91,158.40 L 505.38,154.03 A 250,250 0 0,1 537.67,206.72 L 531.30,209.62 L 534.99,218.18 L 544.92,224.49 L 528.95,230.31 L 528.51,220.83 L 524.92,212.51 L 522.19,213.75 A 233,233 0 0,0 492.09,164.64 L 494.44,162.76 L 488.65,155.79 L 480.41,151.09 Z" fill="#7a4800"/>
-  <path d="M 551.48,245.30 L 546.96,256.16 L 548.85,265.30 L 555.73,264.01 A 250,250 0 0,1 557.80,343.06 L 550.87,342.14 L 549.45,351.36 L 554.54,361.98 L 537.91,358.44 L 542.56,350.17 L 543.93,341.21 L 540.95,340.82 A 233,233 0 0,0 539.02,267.14 L 541.97,266.59 L 540.14,257.71 L 535.06,249.70 Z" fill="#7a4800"/>
-  <path d="M 549.08,383.09 L 539.48,389.91 L 536.25,398.67 L 542.76,401.22 A 250,250 0 0,1 518.23,448.35 L 512.40,444.47 L 507.09,452.14 L 507.00,463.92 L 493.61,453.45 L 501.41,448.05 L 506.57,440.60 L 504.07,438.94 A 233,233 0 0,0 526.94,395.02 L 529.73,396.11 L 532.87,387.61 L 532.82,378.12 Z" fill="#7a4800"/>
-  <path d="M 495.79,477.28 L 484.21,479.41 L 477.58,485.97 L 482.40,491.04 A 250,250 0 0,1 421.16,533.93 L 418.05,527.66 L 409.61,531.65 L 403.65,541.80 L 397.28,526.03 L 406.74,525.26 L 414.93,521.39 L 413.60,518.70 A 233,233 0 0,0 470.68,478.73 L 472.75,480.90 L 479.19,474.53 L 483.15,465.91 Z" fill="#7a4800"/>
-  <path d="M 387.25,547.76 L 376.16,543.82 L 367.14,546.19 L 368.79,552.99 A 250,250 0 0,1 320.47,559.78 L 320.18,552.79 L 310.85,553.00 L 301.28,559.85 L 301.87,542.86 L 310.82,546.00 L 319.88,545.79 L 319.76,542.80 A 233,233 0 0,0 364.79,536.47 L 365.49,539.38 L 374.26,537.08 L 382.00,531.60 Z" fill="#7a4800"/>
-  <path d="M 283.87,558.63 L 275.34,550.52 L 266.13,549.01 L 264.87,555.89 A 250,250 0 0,1 179.00,522.93 L 182.67,516.97 L 174.82,511.93 L 163.05,512.25 L 173.05,498.50 L 178.71,506.11 L 186.34,511.01 L 187.91,508.45 A 233,233 0 0,0 267.94,539.17 L 267.40,542.12 L 276.34,543.59 L 285.64,541.72 Z" fill="#7a4800"/>
-  <path d="M 149.30,501.51 L 146.77,490.02 L 139.98,483.62 L 135.08,488.62 A 250,250 0 0,1 82.33,413.28 L 88.70,410.38 L 85.01,401.82 L 75.08,395.51 L 91.05,389.69 L 91.49,399.17 L 95.08,407.49 L 97.81,406.25 A 233,233 0 0,0 146.98,476.47 L 144.88,478.62 L 151.47,484.83 L 160.23,488.49 Z" fill="#7a4800"/>
-  <path d="M 69.68,378.91 L 74.01,367.96 L 71.96,358.86 L 65.11,360.27 A 250,250 0 0,1 75.99,222.04 L 82.54,224.50 L 85.99,215.83 L 83.42,204.35 L 98.83,211.53 L 92.44,218.55 L 89.09,226.97 L 91.90,228.02 A 233,233 0 0,0 81.76,356.85 L 78.82,357.45 L 80.81,366.29 L 86.03,374.22 Z" fill="#7a4800"/>
-  <path d="M 91.35,188.80 L 102.15,184.12 L 107.13,176.23 L 101.29,172.38 A 250,250 0 0,1 168.76,103.72 L 172.71,109.50 L 180.51,104.38 L 185.00,93.49 L 193.50,108.22 L 184.24,110.30 L 176.67,115.27 L 178.36,117.75 A 233,233 0 0,0 115.48,181.74 L 112.98,180.09 L 108.13,187.75 L 106.21,197.04 Z" fill="#7a4800"/>
-  <path d="M 200.41,85.30 L 211.94,87.66 L 220.55,84.06 L 217.97,77.56 A 250,250 0 0,1 282.13,61.56 L 282.91,68.51 L 292.20,67.65 L 301.28,60.15 L 301.87,77.14 L 292.72,74.63 L 283.69,75.47 L 284.03,78.45 A 233,233 0 0,0 224.23,93.36 L 223.12,90.57 L 214.76,94.07 L 207.86,100.58 Z" fill="#7a4800"/>
-  <path d="M 318.72,60.15 L 327.80,67.65 L 337.09,68.51 L 337.87,61.56 A 250,250 0 0,1 397.96,75.99 L 395.50,82.54 L 404.17,85.99 L 415.65,83.42 L 408.47,98.83 L 401.45,92.44 L 393.03,89.09 L 391.98,91.90 A 233,233 0 0,0 335.97,78.45 L 336.31,75.47 L 327.28,74.63 L 318.13,77.14 Z" fill="#7a4800"/>
-  <path d="M 435.00,93.49 L 439.49,104.38 L 447.29,109.50 L 451.24,103.72 A 250,250 0 0,1 511.22,161.65 L 505.59,165.80 L 510.98,173.41 L 522.01,177.52 L 507.60,186.53 L 505.19,177.35 L 499.95,169.95 L 497.54,171.73 A 233,233 0 0,0 441.64,117.75 L 443.33,115.27 L 435.76,110.30 L 426.50,108.22 Z" fill="#7a4800"/>
-  <path d="M 530.74,192.63 L 528.78,204.24 L 532.68,212.72 L 539.09,209.91 A 250,250 0 0,1 556.64,269.17 L 549.74,270.31 L 551.08,279.54 L 559.05,288.21 L 542.11,289.69 L 544.14,280.42 L 542.83,271.46 L 539.87,271.95 A 233,233 0 0,0 523.51,216.72 L 526.26,215.52 L 522.48,207.29 L 515.73,200.61 Z" fill="#7a4800"/>
-</g>
-<path d="M 318.72,60.15 L 327.80,67.65 L 337.09,68.51 L 337.87,61.56 A 250,250 0 0,1 385.59,71.70 L 383.48,78.37 L 392.31,81.37 L 403.65,78.20 L 397.28,93.97 L 389.94,87.95 L 381.36,85.05 L 380.45,87.91 A 233,233 0 0,0 335.97,78.45 L 336.31,75.47 L 327.28,74.63 L 318.13,77.14 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 334.56,76.29 A 235,235 0 0,1 382.62,86.50" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 419.59,85.30 L 424.83,95.84 L 432.97,100.41 L 436.51,94.37 A 250,250 0 0,1 462.54,111.93 L 458.27,117.47 L 465.55,123.31 L 477.28,124.21 L 465.91,136.85 L 461.07,128.69 L 453.99,123.02 L 452.16,125.40 A 233,233 0 0,0 427.91,109.03 L 429.42,106.45 L 421.52,102.01 L 412.14,100.58 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 424.65,104.86 A 235,235 0 0,1 457.25,126.86" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 492.84,139.50 L 493.95,151.22 L 499.91,158.40 L 505.38,154.03 A 250,250 0 0,1 537.67,206.72 L 531.30,209.62 L 534.99,218.18 L 544.92,224.49 L 528.95,230.31 L 528.51,220.83 L 524.92,212.51 L 522.19,213.75 A 233,233 0 0,0 492.09,164.64 L 494.44,162.76 L 488.65,155.79 L 480.41,151.09 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 494.17,164.03 A 235,235 0 0,1 523.67,212.17" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 551.48,245.30 L 546.96,256.16 L 548.85,265.30 L 555.73,264.01 A 250,250 0 0,1 557.80,343.06 L 550.87,342.14 L 549.45,351.36 L 554.54,361.98 L 537.91,358.44 L 542.56,350.17 L 543.93,341.21 L 540.95,340.82 A 233,233 0 0,0 539.02,267.14 L 541.97,266.59 L 540.14,257.71 L 535.06,249.70 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 541.71,270.81 A 235,235 0 0,1 543.44,337.01" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 549.08,383.09 L 539.48,389.91 L 536.25,398.67 L 542.76,401.22 A 250,250 0 0,1 518.23,448.35 L 512.40,444.47 L 507.09,452.14 L 507.00,463.92 L 493.61,453.45 L 501.41,448.05 L 506.57,440.60 L 504.07,438.94 A 233,233 0 0,0 526.94,395.02 L 529.73,396.11 L 532.87,387.61 L 532.82,378.12 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 529.10,394.98 A 235,235 0 0,1 505.28,440.73" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 495.79,477.28 L 484.21,479.41 L 477.58,485.97 L 482.40,491.04 A 250,250 0 0,1 421.16,533.93 L 418.05,527.66 L 409.61,531.65 L 403.65,541.80 L 397.28,526.03 L 406.74,525.26 L 414.93,521.39 L 413.60,518.70 A 233,233 0 0,0 470.68,478.73 L 472.75,480.90 L 479.19,474.53 L 483.15,465.91 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 469.67,482.43 A 235,235 0 0,1 417.42,519.01" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 387.25,547.76 L 376.16,543.82 L 367.14,546.19 L 368.79,552.99 A 250,250 0 0,1 320.47,559.78 L 320.18,552.79 L 310.85,553.00 L 301.28,559.85 L 301.87,542.86 L 310.82,546.00 L 319.88,545.79 L 319.76,542.80 A 233,233 0 0,0 364.79,536.47 L 365.49,539.38 L 374.26,537.08 L 382.00,531.60 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 366.85,538.02 A 235,235 0 0,1 318.20,544.86" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 283.87,558.63 L 275.34,550.52 L 266.13,549.01 L 264.87,555.89 A 250,250 0 0,1 179.00,522.93 L 182.67,516.97 L 174.82,511.93 L 163.05,512.25 L 173.05,498.50 L 178.71,506.11 L 186.34,511.01 L 187.91,508.45 A 233,233 0 0,0 267.94,539.17 L 267.40,542.12 L 276.34,543.59 L 285.64,541.72 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 261.14,539.86 A 235,235 0 0,1 192.50,513.52" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 149.30,501.51 L 146.77,490.02 L 139.98,483.62 L 135.08,488.62 A 250,250 0 0,1 82.33,413.28 L 88.70,410.38 L 85.01,401.82 L 75.08,395.51 L 91.05,389.69 L 91.49,399.17 L 95.08,407.49 L 97.81,406.25 A 233,233 0 0,0 146.98,476.47 L 144.88,478.62 L 151.47,484.83 L 160.23,488.49 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 140.96,473.24 A 235,235 0 0,1 98.78,413.02" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 69.68,378.91 L 74.01,367.96 L 71.96,358.86 L 65.11,360.27 A 250,250 0 0,1 75.99,222.04 L 82.54,224.50 L 85.99,215.83 L 83.42,204.35 L 98.83,211.53 L 92.44,218.55 L 89.09,226.97 L 91.90,228.02 A 233,233 0 0,0 81.76,356.85 L 78.82,357.45 L 80.81,366.29 L 86.03,374.22 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 77.17,341.89 A 235,235 0 0,1 85.03,242.08" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 91.35,188.80 L 102.15,184.12 L 107.13,176.23 L 101.29,172.38 A 250,250 0 0,1 168.76,103.72 L 172.71,109.50 L 180.51,104.38 L 185.00,93.49 L 193.50,108.22 L 184.24,110.30 L 176.67,115.27 L 178.36,117.75 A 233,233 0 0,0 115.48,181.74 L 112.98,180.09 L 108.13,187.75 L 106.21,197.04 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 117.97,174.54 A 235,235 0 0,1 171.21,120.36" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 200.41,85.30 L 211.94,87.66 L 220.55,84.06 L 217.97,77.56 A 250,250 0 0,1 282.13,61.56 L 282.91,68.51 L 292.20,67.65 L 301.28,60.15 L 301.87,77.14 L 292.72,74.63 L 283.69,75.47 L 284.03,78.45 A 233,233 0 0,0 224.23,93.36 L 223.12,90.57 L 214.76,94.07 L 207.86,100.58 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 225.02,90.90 A 235,235 0 0,1 282.18,76.65" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 318.72,60.15 L 327.80,67.65 L 337.09,68.51 L 337.87,61.56 A 250,250 0 0,1 397.96,75.99 L 395.50,82.54 L 404.17,85.99 L 415.65,83.42 L 408.47,98.83 L 401.45,92.44 L 393.03,89.09 L 391.98,91.90 A 233,233 0 0,0 335.97,78.45 L 336.31,75.47 L 327.28,74.63 L 318.13,77.14 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 337.01,76.56 A 235,235 0 0,1 391.91,89.74" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 435.00,93.49 L 439.49,104.38 L 447.29,109.50 L 451.24,103.72 A 250,250 0 0,1 511.22,161.65 L 505.59,165.80 L 510.98,173.41 L 522.01,177.52 L 507.60,186.53 L 505.19,177.35 L 499.95,169.95 L 497.54,171.73 A 233,233 0 0,0 441.64,117.75 L 443.33,115.27 L 435.76,110.30 L 426.50,108.22 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 446.80,118.92 A 235,235 0 0,1 496.19,166.62" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-<path d="M 530.74,192.63 L 528.78,204.24 L 532.68,212.72 L 539.09,209.91 A 250,250 0 0,1 556.64,269.17 L 549.74,270.31 L 551.08,279.54 L 559.05,288.21 L 542.11,289.69 L 544.14,280.42 L 542.83,271.46 L 539.87,271.95 A 233,233 0 0,0 523.51,216.72 L 526.26,215.52 L 522.48,207.29 L 515.73,200.61 Z" fill="url(#gSegFill)" stroke="#b87210" stroke-width="0.9" opacity="0.97"/>
-<path d="M 525.67,216.67 A 235,235 0 0,1 541.71,270.81" fill="none" stroke="#fef090" stroke-width="1.6" opacity="0.5" stroke-linecap="round"/>
-</g>
-
-<!-- ═══════════════════════════════════ -->
-<!-- OUTERMOST FRAME (stepped bezel like original) -->
-<!-- ═══════════════════════════════════ -->
-<!-- Shadow/depth ring -->
-<circle cx="310" cy="310" r="202" fill="rgba(0,0,0,.3)"/>
-<!-- Outer rim -->
-<circle cx="310" cy="310" r="200" fill="url(#gBezel)" opacity=".2"/>
-<circle cx="310" cy="310" r="200" fill="none" stroke="url(#gBezel)" stroke-width="18" opacity=".95"/>
-<!-- Rim inner shadow -->
-<circle cx="310" cy="310" r="190" fill="none" stroke="rgba(0,0,0,.4)" stroke-width="3"/>
-<!-- Rim inner highlight -->
-<circle cx="310" cy="310" r="191" fill="none" stroke="rgba(255,240,140,.25)" stroke-width="1.5"/>
-
-<!-- Bezel tick marks -->
-<g id="bezelTicks"></g>
-
-<!-- ═══════════════════════════════════ -->
-<!-- MAIN FACE — bright golden (like original!) -->
-<!-- ═══════════════════════════════════ -->
-<!-- Outer face ring (darker gold, where numerals sit) -->
-<circle cx="310" cy="310" r="188" fill="url(#gRing)"/>
-
-<!-- Subtle inner shadow on outer ring -->
-<circle cx="310" cy="310" r="188" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="6"/>
-
-<!-- Inner face ring (lighter gold) -->
-<circle cx="310" cy="310" r="160" fill="url(#gFace)"/>
-
-<!-- Ring separator lines -->
-<circle cx="310" cy="310" r="163" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="2"/>
-<circle cx="310" cy="310" r="156" fill="none" stroke="rgba(0,0,0,.2)" stroke-width="1"/>
-<circle cx="310" cy="310" r="185" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="1.5"/>
-
-<!-- Tick marks on face -->
-<g id="faceTicks"></g>
-<!-- Diamond markers between numerals -->
-<g id="diamondMarks"></g>
-<!-- Roman numerals — dark on light gold -->
-<g id="romanNums"></g>
-
-<!-- ═══════════════════════════════════ -->
-<!-- DARK GEAR WINDOW (center opening) -->
-<!-- ═══════════════════════════════════ -->
-<circle cx="310" cy="310" r="110" fill="url(#gDark)"/>
-<circle cx="310" cy="310" r="110" fill="none" stroke="rgba(0,0,0,.6)" stroke-width="4"/>
-<!-- Inner edge highlight -->
-<circle cx="310" cy="310" r="107" fill="none" stroke="rgba(180,120,20,.4)" stroke-width="1.5"/>
-
-<!-- ═══════════════════════════════════ -->
-<!-- GEAR MECHANISM (inside dark window) -->
-<!-- ═══════════════════════════════════ -->
-<g clip-path="url(#gearClip)">
-
-  <!-- Central large gear with hub -->
-  <g id="gearC">
-    <!-- Gear body -->
-    <circle cx="310" cy="310" r="50" fill="url(#gGear)"/>
-    <circle cx="310" cy="310" r="50" fill="none" stroke="#e8c060" stroke-width="1.5" opacity=".5"/>
-    <!-- Gear teeth -->
-    <circle cx="310" cy="310" r="56" fill="none"
-            stroke="url(#gGear)" stroke-width="9" stroke-dasharray="11 7.3" opacity=".9"/>
-    <!-- Hub plate -->
-    <circle cx="310" cy="310" r="32" fill="url(#gGear)" stroke="#e8c060" stroke-width="1.5" opacity=".7"/>
-    <!-- Hub slots -->
-    <circle cx="310" cy="310" r="22" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
-    <!-- Hub center bolt -->
-    <circle cx="310" cy="310" r="10" fill="url(#gGear)" stroke="#fce060" stroke-width="1.5"/>
-    <!-- Center hole -->
-    <circle cx="310" cy="310" r="6" fill="url(#gDark)" stroke="#d4a020" stroke-width="1"/>
-    <!-- Offset circle holes (like original) -->
-    <circle cx="310" cy="293" r="5" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
-    <circle cx="322" cy="318" r="4" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
-    <circle cx="298" cy="322" r="3.5" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
-    <!-- Spokes -->
-    <g stroke="#d4a020" stroke-width="2" opacity=".5">
-      <line x1="310" y1="262" x2="310" y2="358"/>
-      <line x1="262" y1="310" x2="358" y2="310"/>
-      <line x1="276" y1="276" x2="344" y2="344"/>
-      <line x1="344" y1="276" x2="276" y2="344"/>
-    </g>
-    <!-- Screw detail on hub -->
-    <line x1="304" y1="310" x2="316" y2="310" stroke="#fce060" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="310" y1="304" x2="310" y2="316" stroke="#fce060" stroke-width="1.5" stroke-linecap="round"/>
-  </g>
-
-  <!-- Upper gear (top-right area) -->
-  <g id="gearT">
-    <circle cx="340" cy="258" r="28" fill="url(#gGear)"/>
-    <circle cx="340" cy="258" r="32" fill="none"
-            stroke="url(#gGear)" stroke-width="6" stroke-dasharray="7 4.7" opacity=".88"/>
-    <!-- Crimson accent ring -->
-    <circle cx="340" cy="258" r="20" fill="url(#gCrim)" opacity=".6"/>
-    <circle cx="340" cy="258" r="20" fill="none" stroke="#c04010" stroke-width="1.5" opacity=".7"/>
-    <circle cx="340" cy="258" r="12" fill="url(#gGear)"/>
-    <circle cx="340" cy="258" r="6" fill="url(#gDark)" stroke="#d4a020" stroke-width="1"/>
-    <g stroke="#d4a020" stroke-width="1.5" opacity=".45">
-      <line x1="340" y1="234" x2="340" y2="282"/>
-      <line x1="316" y1="258" x2="364" y2="258"/>
-    </g>
-  </g>
-
-  <!-- Lower-right gear -->
-  <g id="gearBR">
-    <circle cx="350" cy="355" r="26" fill="url(#gGear)"/>
-    <circle cx="350" cy="355" r="30" fill="none"
-            stroke="url(#gGear)" stroke-width="5.5" stroke-dasharray="6.5 4.3" opacity=".85"/>
-    <circle cx="350" cy="355" r="18" fill="url(#gCrim)" opacity=".55"/>
-    <circle cx="350" cy="355" r="18" fill="none" stroke="#c04010" stroke-width="1.5" opacity=".65"/>
-    <circle cx="350" cy="355" r="10" fill="url(#gGear)"/>
-    <circle cx="350" cy="355" r="5" fill="url(#gDark)" stroke="#d4a020" stroke-width="1"/>
-    <g stroke="#d4a020" stroke-width="1.5" opacity=".4">
-      <line x1="350" y1="333" x2="350" y2="377"/>
-      <line x1="328" y1="355" x2="372" y2="355"/>
-    </g>
-  </g>
-
-  <!-- Left small gear -->
-  <g id="gearL">
-    <circle cx="268" cy="348" r="22" fill="url(#gGear)"/>
-    <circle cx="268" cy="348" r="25" fill="none"
-            stroke="url(#gGear)" stroke-width="4.5" stroke-dasharray="5.5 3.7" opacity=".82"/>
-    <circle cx="268" cy="348" r="14" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
-    <circle cx="268" cy="348" r="7" fill="url(#gGear)"/>
-    <circle cx="268" cy="348" r="3.5" fill="url(#gDark)" stroke="#d4a020" stroke-width=".8"/>
-    <g stroke="#d4a020" stroke-width="1.2" opacity=".4">
-      <line x1="268" y1="330" x2="268" y2="366"/>
-      <line x1="250" y1="348" x2="286" y2="348"/>
-    </g>
-  </g>
-
-  <!-- Top-center small gear -->
-  <g id="gearTC">
-    <circle cx="290" cy="255" r="18" fill="url(#gGear)"/>
-    <circle cx="290" cy="255" r="21" fill="none"
-            stroke="url(#gGear)" stroke-width="4" stroke-dasharray="4.9 3.3" opacity=".8"/>
-    <circle cx="290" cy="255" r="11" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
-    <circle cx="290" cy="255" r="5.5" fill="url(#gGear)"/>
-    <circle cx="290" cy="255" r="2.5" fill="url(#gDark)"/>
-  </g>
-
-  <!-- Tiny gear bottom -->
-  <g id="gearB">
-    <circle cx="318" cy="390" r="16" fill="url(#gGear)"/>
-    <circle cx="318" cy="390" r="19" fill="none"
-            stroke="url(#gGear)" stroke-width="3.5" stroke-dasharray="4.4 2.9" opacity=".78"/>
-    <circle cx="318" cy="390" r="9" fill="url(#gDark)" stroke="#c09020" stroke-width="1"/>
-    <circle cx="318" cy="390" r="4.5" fill="url(#gGear)"/>
-  </g>
-
-</g>
-
-<!-- Gear window border ring over gears -->
-<circle cx="310" cy="310" r="108" fill="none" stroke="#c09020" stroke-width="2" opacity=".6"/>
-
-<!-- ═══════════════════════════════════ -->
-<!-- CLOCK HANDS -->
-<!-- ═══════════════════════════════════ -->
-<g id="hands" transform="translate(310,310)">
-
-  <!-- Hour hand — gun shaped, pointing up -->
-  <g id="hourHand">
-    <!-- Barrel -->
-    <rect x="-5.5" y="-88" width="11" height="75" rx="4"
-          fill="#d4a020" stroke="#fce060" stroke-width="1" filter="url(#glow)"/>
-    <!-- Muzzle -->
-    <path d="M -5.5,-88 Q 0,-102 5.5,-88 L 5.5,-80 L -5.5,-80Z"
-          fill="#fce060"/>
-    <!-- Sight -->
-    <rect x="-1.5" y="-100" width="3" height="6" rx="1" fill="#fce878"/>
-    <!-- Trigger guard -->
-    <path d="M -5.5,-46 Q -15,-38 -13,-26 Q -11,-16 0,-16 Q 11,-16 11,-26 Q 11,-36 5.5,-46"
-          fill="none" stroke="#d4a020" stroke-width="3.5" stroke-linejoin="round"/>
-    <!-- Lock plate -->
-    <path d="M 5.5,-64 L 15,-60 Q 20,-52 15,-46 L 5.5,-44"
-          fill="#c49018" stroke="#fce060" stroke-width=".8"/>
-    <!-- Grip -->
-    <path d="M -5.5,-10 Q -12,-4 -13,12 Q -11,22 -5.5,24 L 5.5,24 L 5.5,-10Z"
-          fill="#b87810" stroke="#d4a020" stroke-width="1"/>
-    <!-- Grip texture lines -->
-    <line x1="-9" y1="-2" x2="-9" y2="16" stroke="rgba(255,220,50,.25)" stroke-width=".8"/>
-    <line x1="-6" y1="-2" x2="-6" y2="16" stroke="rgba(255,220,50,.15)" stroke-width=".6"/>
-  </g>
-
-  <!-- Minute hand — long musket -->
-  <g id="minuteHand">
-    <rect x="-4" y="-145" width="8" height="118" rx="3"
-          fill="#c8980c" stroke="#fce060" stroke-width=".8" filter="url(#glow)"/>
-    <path d="M -4,-145 Q 0,-160 4,-145 L 4,-137 L -4,-137Z" fill="#fce870"/>
-    <!-- Bayonet -->
-    <path d="M 4,-145 L 12,-158 L 9,-145" fill="#d4a018" opacity=".8"/>
-    <rect x="-1.5" y="-158" width="3" height="6" rx="1" fill="#fce870"/>
-    <!-- Lock -->
-    <path d="M 4,-88 L 16,-83 Q 20,-75 16,-68 L 4,-66"
-          fill="#c49018" stroke="#fce060" stroke-width=".7"/>
-    <!-- Trigger guard -->
-    <path d="M -4,-64 Q -13,-55 -11,-42 Q -9,-32 0,-32 Q 9,-32 9,-42 Q 9,-53 4,-64"
-          fill="none" stroke="#c8980c" stroke-width="3"/>
-    <!-- Grip -->
-    <path d="M -4,-26 Q -10,-18 -11,0 Q -9,12 -4,14 L 4,14 L 4,-26Z"
-          fill="#b07808" stroke="#c8980c" stroke-width=".8"/>
-    <line x1="-8" y1="-18" x2="-8" y2="8" stroke="rgba(255,215,40,.2)" stroke-width=".7"/>
-  </g>
-
-  <!-- Second hand — thin red needle -->
-  <g id="secondHand" filter="url(#redGlow)">
-    <line x1="0" y1="32" x2="0" y2="-160"
-          stroke="#cc1808" stroke-width="1.8" stroke-linecap="round"/>
-    <circle cy="32" r="5.5" fill="#b01408" stroke="#dd2818" stroke-width="1.2"/>
-    <line x1="0" y1="32" x2="0" y2="46" stroke="#e03020" stroke-width="2.5"/>
-  </g>
-
-  <!-- Center boss -->
-  <circle r="18" fill="url(#gGear)" stroke="#fce070" stroke-width="2" filter="url(#glow)"/>
-  <circle r="12" fill="url(#gCrim)" stroke="#c01808" stroke-width="1.5"/>
-  <circle r="7" fill="none" stroke="#e8c040" stroke-width="1" opacity=".65"/>
-  <circle r="3.5" fill="#fce080" filter="url(#glow)"/>
-  <line x1="-16" y1="0" x2="16" y2="0" stroke="#e8c040" stroke-width=".9" opacity=".4"/>
-  <line x1="0" y1="-16" x2="0" y2="16" stroke="#e8c040" stroke-width=".9" opacity=".4"/>
-</g>
-
-</svg>
+        <svg class="clock-svg" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stop-color="#e8a030" stop-opacity="0.7"/>
+              <stop offset="50%"  stop-color="#e8a030" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#e8a030" stop-opacity="0.7"/>
+            </linearGradient>
+          </defs>
+          <g class="ring-ccw-slow">
+            <circle cx="300" cy="300" r="292" fill="none" stroke="rgba(232,160,48,0.08)" stroke-width="6"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(0   300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(30  300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(60  300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(90  300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(120 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(150 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(180 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(210 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(240 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(270 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(300 300 300)"/>
+            <line x1="300" y1="5"  x2="300" y2="24" stroke="rgba(232,160,48,0.4)" stroke-width="2" transform="rotate(330 300 300)"/>
+          </g>
+          <g class="ring-cw-slow">
+            <circle cx="300" cy="300" r="274" fill="none" stroke="rgba(232,160,48,0.20)" stroke-width="1.5" stroke-dasharray="3 9"/>
+          </g>
+          <g class="ring-ccw-mid">
+            <circle cx="300" cy="300" r="255" fill="none" stroke="rgba(232,160,48,0.12)" stroke-width="1"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.6)"  transform="rotate(0   300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.25)" transform="rotate(45  300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.6)"  transform="rotate(90  300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.25)" transform="rotate(135 300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.6)"  transform="rotate(180 300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.25)" transform="rotate(225 300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.6)"  transform="rotate(270 300 300)"/>
+            <polygon points="300,43 304,47 300,51 296,47" fill="rgba(232,160,48,0.25)" transform="rotate(315 300 300)"/>
+          </g>
+          <g class="orbit-fast">
+            <circle cx="300" cy="300" r="232" fill="none" stroke="rgba(232,160,48,0.10)" stroke-width="1" stroke-dasharray="1 14"/>
+            <circle cx="300" cy="67" r="4.5" fill="rgba(232,160,48,0.80)" transform="rotate(0   300 300)"/>
+            <circle cx="300" cy="67" r="4.5" fill="rgba(232,160,48,0.80)" transform="rotate(120 300 300)"/>
+            <circle cx="300" cy="67" r="4.5" fill="rgba(232,160,48,0.80)" transform="rotate(240 300 300)"/>
+          </g>
+          <g class="orbit-rev">
+            <circle cx="300" cy="300" r="210" fill="none" stroke="rgba(232,160,48,0.18)" stroke-width="1" stroke-dasharray="8 4"/>
+          </g>
+          <g class="ring-cw-fast">
+            <circle cx="300" cy="300" r="188" fill="none" stroke="rgba(232,160,48,0.22)" stroke-width="1" stroke-dasharray="18 6"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(0   300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(60  300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(120 300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(180 300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(240 300 300)"/>
+            <polygon points="300,110 303.5,118 296.5,118" fill="rgba(232,160,48,0.55)" transform="rotate(300 300 300)"/>
+          </g>
+        </svg>
+        <img src="clock.png" alt="" class="clock-img" id="clockImg" draggable="false">
       </div>
     </div>
 
@@ -769,7 +462,7 @@
                 <p class="drop-or" data-i18n="drop_or">або</p>
                 <label for="fileInputCompress" class="btn-choose" data-i18n="drop_choose">Choose file</label>
                 <input type="file" id="fileInputCompress" accept="image/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
-                <p class="drop-hint">JPG · PNG · WEBP · до 50MB</p>
+                <p class="drop-hint" data-i18n="drop_hint_compress">JPG · PNG · WEBP · до 50MB</p>
             </div>
 
             <div id="compressControls" hidden>
@@ -842,7 +535,7 @@
                     <p class="drop-or" data-i18n="drop_or">або</p>
                     <label for="fileInputPdf" class="btn-choose" data-i18n="drop_choose">Choose file</label>
                     <input type="file" id="fileInputPdf" accept="image/*" multiple style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
-                    <p class="drop-hint">JPG · PNG · WEBP — кілька файлів одночасно</p>
+                    <p class="drop-hint" data-i18n="pdf_hint_multi">JPG · PNG · WEBP — кілька файлів одночасно</p>
                 </div>
                 <div id="pdfFileList" class="pdf-file-list" hidden></div>
                 <div class="action-row" id="pdfActions" hidden>
@@ -900,7 +593,7 @@
                 <p class="drop-or" data-i18n="drop_or">or</p>
                 <label for="fileInputBgremove" class="btn-choose" data-i18n="drop_choose">Choose file</label>
                 <input type="file" id="fileInputBgremove" accept="image/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
-                <p class="drop-hint">JPG · PNG · WEBP · max 50 MB</p>
+                <p class="drop-hint" data-i18n="drop_hint_bgremove">JPG · PNG · WEBP · max 50 MB</p>
             </div>
 
             <div class="progress-wrap" id="bgremoveProgress" hidden>
@@ -941,6 +634,61 @@
                 </button>
             </div>
         </section>
+
+
+    <!-- ===== AUDIO CONVERTER ===== -->
+    <section class="section" id="section-audio">
+      <div class="section-header">
+        <h2 class="section-title" data-i18n="audio_title">Audio <span class="accent">Convert</span></h2>
+        <p class="section-desc" data-i18n="audio_desc">Конвертуй MP3, OGG, WAV, FLAC без завантаження на сервер</p>
+      </div>
+      <div class="section-card">
+        <div class="drop-zone" id="dropZoneAudio" onclick="if(event.target===this||event.target.closest('.drop-zone')){document.getElementById('fileInputAudio').click()}">
+          <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+          <p class="drop-text" data-i18n="drop_text">Перетягни файл або</p>
+          <label for="fileInputAudio" class="btn-choose" data-i18n="drop_choose">Choose file</label>
+          <input type="file" id="fileInputAudio" accept="audio/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
+          <p class="drop-hint" data-i18n="audio_hint">MP3 · WAV · OGG · FLAC · M4A · до 100MB</p>
+        </div>
+
+        <div class="file-info-bar" id="audioFileInfo" hidden>
+          <span class="file-name" id="audioFileName">—</span>
+          <span class="file-size" id="audioFileSize">—</span>
+          <button class="btn-reset" id="audioResetBtn" title="Reset">✕</button>
+        </div>
+
+        <div class="convert-controls" id="audioControls" hidden>
+          <div class="control-group">
+            <label class="control-label" data-i18n="audio_format">Формат виводу</label>
+            <select id="audioFormat" class="select-input">
+              <option value="wav">WAV</option>
+              <option value="mp3" selected>MP3</option>
+            </select>
+          </div>
+          <div class="control-group" id="audioMp3QualityGroup">
+            <label class="control-label" data-i18n="audio_quality">Якість MP3</label>
+            <select id="audioMp3Quality" class="select-input">
+              <option value="0">320 kbps (найкраща)</option>
+              <option value="2" selected>192 kbps</option>
+              <option value="4">128 kbps</option>
+              <option value="6">96 kbps</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="convert-actions" id="audioActions" hidden>
+          <button class="btn-convert" id="audioConvertBtn" data-i18n="btn_convert">Конвертувати</button>
+          <button class="btn-download" id="audioDownloadBtn" hidden data-i18n="btn_download">Завантажити</button>
+        </div>
+
+        <div class="progress-wrap" id="audioProgress" hidden>
+          <div class="progress-bar"><div class="progress-fill" id="audioProgressFill"></div></div>
+          <span class="progress-label" id="audioProgressLabel" data-i18n="prog_processing">Обробка...</span>
+        </div>
+      </div>
+    </section>
 
     </main>
 
@@ -1303,19 +1051,14 @@ function loop(ts){
 }
 requestAnimationFrame(loop);
   </script>
-    <!-- ===== PRIVACY POLICY MODAL ===== -->
+    
+<!-- ===== PRIVACY POLICY MODAL ===== -->
 <div id="ppModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#1e1208;border:1px solid rgba(232,160,48,.25);border-radius:16px;max-width:620px;width:100%;max-height:85vh;overflow-y:auto;padding:36px 40px;position:relative;box-shadow:0 0 60px rgba(0,0,0,.6);">
-    <button onclick="document.getElementById('ppModal').style.display='none'" style="position:absolute;top:16px;right:20px;background:none;border:none;color:rgba(255,255,255,.4);font-size:1.4rem;cursor:pointer;line-height:1;">✕</button>
+  <div id="ppModalInner">
+    <button id="ppCloseBtn" onclick="document.getElementById('ppModal').style.display='none'">✕</button>
     <h2 style="font-family:inherit;font-size:1.3rem;color:#e8a030;margin:0 0 4px;">Privacy Policy</h2>
     <p style="font-size:.75rem;color:rgba(255,255,255,.3);margin:0 0 24px;">Last updated: March 11, 2026</p>
-    <style>
-      #ppModal h3{font-size:.95rem;color:#e8a030;margin:20px 0 6px;font-weight:600;}
-      #ppModal p,#ppModal li{font-size:.85rem;color:rgba(255,255,255,.7);line-height:1.65;margin:0 0 8px;}
-      #ppModal ul{padding-left:18px;margin:0 0 8px;}
-      #ppModal a{color:#e8a030;text-decoration:none;}
-      #ppModal .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,255,176,.08);border:1px solid rgba(79,255,176,.2);border-radius:8px;padding:8px 14px;font-size:.82rem;color:#4fffb0;margin:10px 0 16px;}
-    </style>
+
     <div class="badge">🔒 ConvertX processes everything locally — no files ever leave your device.</div>
     <h3>1. What We Collect</h3>
     <p>ConvertX does <strong>not</strong> collect, store, or transmit any files you process. All operations happen entirely within your browser. No file data is sent to any server.</p>

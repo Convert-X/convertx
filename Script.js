@@ -1,4 +1,344 @@
 
+
+
+// ══════════════════════════════════════════════
+// AUDIO CONVERTER
+// ══════════════════════════════════════════════
+(function() {
+    var dropZone       = document.getElementById('dropZoneAudio');
+    var fileInput      = document.getElementById('fileInputAudio');
+    var fileInfo       = document.getElementById('audioFileInfo');
+    var fileName       = document.getElementById('audioFileName');
+    var fileSize       = document.getElementById('audioFileSize');
+    var resetBtn       = document.getElementById('audioResetBtn');
+    var controls       = document.getElementById('audioControls');
+    var actions        = document.getElementById('audioActions');
+    var convertBtn     = document.getElementById('audioConvertBtn');
+    var downloadBtn    = document.getElementById('audioDownloadBtn');
+    var progress       = document.getElementById('audioProgress');
+    var progressFill   = document.getElementById('audioProgressFill');
+    var progressLabel  = document.getElementById('audioProgressLabel');
+    var formatSelect   = document.getElementById('audioFormat');
+    var qualitySelect  = document.getElementById('audioMp3Quality');
+    var qualityGroup   = document.getElementById('audioMp3QualityGroup');
+
+    if (!dropZone) return;
+
+    var currentFile = null;
+    var currentBlob = null;
+
+    function formatBytes(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+        return (b/1048576).toFixed(1) + ' MB';
+    }
+
+    function setFile(file) {
+        if (!file || !file.type.startsWith('audio/')) {
+            alert('Please select an audio file');
+            return;
+        }
+        if (file.size > 100 * 1024 * 1024) {
+            alert('File too large. Max 100 MB.');
+            return;
+        }
+        currentFile = file;
+        currentBlob = null;
+        fileName.textContent = file.name;
+        fileSize.textContent = formatBytes(file.size);
+        fileInfo.hidden = false;
+        controls.hidden = false;
+        actions.hidden = false;
+        downloadBtn.hidden = true;
+        progress.hidden = true;
+        progressFill.style.width = '0%';
+    }
+
+    function resetAudio() {
+        currentFile = null; currentBlob = null;
+        fileInput.value = '';
+        fileInfo.hidden = true;
+        controls.hidden = true;
+        actions.hidden = true;
+        downloadBtn.hidden = true;
+        progress.hidden = true;
+    }
+
+    // Drag & drop
+    dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault(); dropZone.classList.remove('drag-over');
+        if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', function() { if (this.files[0]) setFile(this.files[0]); });
+    resetBtn.addEventListener('click', resetAudio);
+
+    // Show/hide MP3 quality
+    formatSelect.addEventListener('change', function() {
+        qualityGroup.style.display = this.value === 'mp3' ? '' : 'none';
+    });
+
+    // ── CONVERT ──────────────────────────────────
+    convertBtn.addEventListener('click', function() {
+        if (!currentFile) return;
+        var fmt = formatSelect.value;
+        progress.hidden = false;
+        progressFill.style.width = '10%';
+        var t = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+        progressLabel.textContent = t.prog_processing || 'Processing...';
+        downloadBtn.hidden = true;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            progressFill.style.width = '30%';
+            var arrayBuffer = e.target.result;
+            var AudioCtx = window.AudioContext || window.webkitAudioContext;
+            var ctx = new AudioCtx();
+            ctx.decodeAudioData(arrayBuffer, function(audioBuffer) {
+                progressFill.style.width = '60%';
+                if (fmt === 'wav') {
+                    var blob = audioBufferToWav(audioBuffer);
+                    finishDownload(blob, 'wav', 'audio/wav');
+                } else if (fmt === 'mp3') {
+                    encodeMP3(audioBuffer, parseInt(qualitySelect.value), function(blob) {
+                        finishDownload(blob, 'mp3', 'audio/mpeg');
+                    });
+                }
+                ctx.close();
+            }, function() {
+                progress.hidden = true;
+                alert('Could not decode audio. Try a different format.');
+            });
+        };
+        reader.readAsArrayBuffer(currentFile);
+    });
+
+    function finishDownload(blob, ext, mime) {
+        currentBlob = blob;
+        progressFill.style.width = '100%';
+        var t = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+        progressLabel.textContent = (t.prog_done || 'Done!') + ' (' + formatBytes(blob.size) + ')';
+        downloadBtn.hidden = false;
+        downloadBtn.onclick = function() {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            var base = currentFile.name.replace(/\.[^/.]+$/, '');
+            a.download = base + '.' + ext;
+            a.click();
+            setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+        };
+    }
+
+    // ── WAV ENCODER ──────────────────────────────
+    function audioBufferToWav(buffer) {
+        var numCh = buffer.numberOfChannels;
+        var sr = buffer.sampleRate;
+        var numSamples = buffer.length;
+        var bytesPerSample = 2;
+        var dataSize = numCh * numSamples * bytesPerSample;
+        var ab = new ArrayBuffer(44 + dataSize);
+        var view = new DataView(ab);
+        function writeStr(off, str) { for (var i=0;i<str.length;i++) view.setUint8(off+i, str.charCodeAt(i)); }
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + dataSize, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numCh, true);
+        view.setUint32(24, sr, true);
+        view.setUint32(28, sr * numCh * bytesPerSample, true);
+        view.setUint16(32, numCh * bytesPerSample, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, dataSize, true);
+        var offset = 44;
+        for (var i = 0; i < numSamples; i++) {
+            for (var ch = 0; ch < numCh; ch++) {
+                var s = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+                offset += 2;
+            }
+        }
+        return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    // ── MP3 ENCODER (lamejs via CDN) ─────────────
+    function encodeMP3(buffer, quality, cb) {
+        function doEncode() {
+            progressFill.style.width = '65%';
+            var lame = new lamejs.Mp3Encoder(buffer.numberOfChannels, buffer.sampleRate, quality === 0 ? 320 : quality === 2 ? 192 : quality === 4 ? 128 : 96);
+            var left = buffer.getChannelData(0);
+            var right = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left;
+            var blockSize = 1152;
+            var mp3Data = [];
+            function toInt16(ch) {
+                var a = new Int16Array(ch.length);
+                for (var i=0; i<ch.length; i++) a[i] = ch[i] < 0 ? ch[i] * 0x8000 : ch[i] * 0x7FFF;
+                return a;
+            }
+            var l16 = toInt16(left), r16 = toInt16(right);
+            progressFill.style.width = '75%';
+            for (var i = 0; i < l16.length; i += blockSize) {
+                var lc = l16.subarray(i, i+blockSize);
+                var rc = r16.subarray(i, i+blockSize);
+                var d = lame.encodeBuffer(lc, rc);
+                if (d.length > 0) mp3Data.push(new Int8Array(d));
+            }
+            var flush = lame.flush();
+            if (flush.length > 0) mp3Data.push(new Int8Array(flush));
+            progressFill.style.width = '95%';
+            cb(new Blob(mp3Data, { type: 'audio/mpeg' }));
+        }
+        // Завантажити lamejs якщо ще не завантажено
+        if (window.lamejs) { doEncode(); return; }
+        progressLabel.textContent = 'Loading MP3 encoder...';
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js';
+        s.onload = doEncode;
+        s.onerror = function() { alert('Could not load MP3 encoder. Try WAV format.'); progress.hidden = true; };
+        document.head.appendChild(s);
+    }
+})();
+
+
+
+// ══════════════════════════════════════════════
+// CLOCK EASTER EGG
+// ══════════════════════════════════════════════
+(function() {
+    var clockImg = document.getElementById('clockImg');
+    var clockScene = document.getElementById('clockScene');
+    if (!clockScene) return;
+    // Pointer events fix
+    clockScene.style.pointerEvents = 'auto';
+    if (clockImg) clockImg.style.pointerEvents = 'auto';
+
+    var snd1 = new Audio('AnyNotification.ogg'); snd1.volume = 0.35;
+    var snd2 = new Audio('Shoot2_Zap.ogg'); snd2.volume = 0.3;
+
+    var clickCount = 0;
+    var clickTimer = null;
+
+    // Popup helper
+    function showClockMsg(msg) {
+        var existing = document.getElementById('clockPopup');
+        if (existing) existing.remove();
+        var pop = document.createElement('div');
+        pop.id = 'clockPopup';
+        pop.textContent = msg;
+        pop.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1e1208;border:1px solid rgba(232,160,48,.4);border-radius:12px;padding:14px 28px;color:#e8a030;font-family:inherit;font-size:.95rem;z-index:9998;box-shadow:0 4px 30px rgba(0,0,0,.5);pointer-events:none;animation:clockPop .3s ease;white-space:nowrap;';
+        document.body.appendChild(pop);
+        setTimeout(function() {
+            pop.style.transition = 'opacity .4s';
+            pop.style.opacity = '0';
+            setTimeout(function() { pop.remove(); }, 400);
+        }, 2200);
+    }
+
+    // Додати анімацію
+    var st = document.createElement('style');
+    st.textContent = '@keyframes clockPop{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+    document.head.appendChild(st);
+
+    // Клік на саму картинку або SVG
+    var clickTarget = clockImg || clockScene;
+    clickTarget.style.cursor = 'pointer';
+    function handleClockClick() {
+        clickCount++;
+        if (clickCount === 1) {
+            snd1.currentTime = 0; snd1.play().catch(function(){});
+            showClockMsg('Clock: what?');
+        } else if (clickCount === 2) {
+            snd2.currentTime = 0; snd2.play().catch(function(){});
+            showClockMsg('Clock: Are you lost?');
+        } else {
+            snd2.currentTime = 0; snd2.play().catch(function(){});
+            var target = clockScene.querySelector('.clock-img') || clockScene;
+            target.style.transition = 'transform .05s';
+            var shakes = 0;
+            var dirs = [-8,8,-6,6,-4,4,-2,2,0];
+            var shakeInterval = setInterval(function() {
+                target.style.transform = 'translateX(' + (dirs[shakes]||0) + 'px)';
+                shakes++;
+                if (shakes >= dirs.length) {
+                    clearInterval(shakeInterval);
+                    target.style.transform = '';
+                }
+            }, 40);
+            showClockMsg('Clock: STOP IT!');
+            clickCount = 0;
+        }
+    }
+
+    // Desktop
+    clockScene.addEventListener('click', handleClockClick);
+
+    // Mobile — через deco-mobile-bg (де clock.png видно на телефоні)
+    var mobileBg = document.getElementById('deco-mobile-bg');
+    if (mobileBg) {
+        mobileBg.style.pointerEvents = 'auto';
+        mobileBg.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            handleClockClick();
+        });
+    }
+})();
+
+
+// ── SIDEBAR REALTIME CLOCK ────────────────────────
+(function() {
+    var el = document.getElementById('sidebarClock');
+    if (!el) return;
+    var blink = true;
+    function tick() {
+        var now = new Date();
+        var h = now.getHours().toString().padStart(2,'0');
+        var m = now.getMinutes().toString().padStart(2,'0');
+        var s = now.getSeconds().toString().padStart(2,'0');
+        var sep = blink ? ':' : '<span style="opacity:.2">:</span>';
+        blink = !blink;
+        el.innerHTML = h + sep + m + '<span style="font-size:.7em;opacity:.6">' + sep + s + '</span>';
+    }
+    tick();
+    setInterval(tick, 500);
+})();
+
+
+// ── RANGE SLIDER FILL ─────────────────────────────
+(function() {
+    function updateRangeFill(input) {
+        var min = parseFloat(input.min) || 0;
+        var max = parseFloat(input.max) || 100;
+        var val = parseFloat(input.value) || 0;
+        var pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
+        input.style.background = 'linear-gradient(to right, var(--accent) ' + pct + ', rgba(232,160,48,.15) ' + pct + ')';
+    }
+    function initRanges() {
+        document.querySelectorAll('input[type=range]').forEach(function(r) {
+            updateRangeFill(r);
+            r.addEventListener('input', function() { updateRangeFill(this); });
+        });
+    }
+    document.addEventListener('DOMContentLoaded', initRanges);
+    // Також через MutationObserver на випадок динамічних елементів
+    var obs = new MutationObserver(function(muts) {
+        muts.forEach(function(m) {
+            m.addedNodes.forEach(function(n) {
+                if (n.nodeType === 1) {
+                    n.querySelectorAll && n.querySelectorAll('input[type=range]').forEach(function(r) {
+                        updateRangeFill(r);
+                        r.addEventListener('input', function() { updateRangeFill(this); });
+                    });
+                }
+            });
+        });
+    });
+    obs.observe(document.body || document.documentElement, { childList: true, subtree: true });
+})();
+
 // ── THEME SYSTEM ─────────────────────────────────
 (function() {
     var saved = localStorage.getItem('cx-theme');
@@ -110,7 +450,18 @@ var TRANSLATIONS = {
         bgremove_title:      'Background <span class="accent">Removal</span>',
         bgremove_desc:       'AI removes the background directly in your browser — 100% private',
         bgremove_notice:     'First run downloads the model (~40 MB). Then cached in the browser. Processing may take 5–30s.',
-        bgremove_download:   'Download PNG',
+        // Audio + fixes
+        nav_audio:          'Audio',
+        audio_title:        'Audio <span class=\"accent\">Convert</span>',
+        audio_desc:         'Convert MP3, OGG, WAV, FLAC without server upload',
+        audio_hint:         'MP3 · WAV · OGG · FLAC · M4A · up to 100MB',
+        audio_format:       'Output format',
+        audio_quality:      'MP3 Quality',
+        support_btn:        'Support ☕',
+        pdf_hint_multi:     'JPG · PNG · WEBP — multiple files at once',
+        drop_hint_compress: 'JPG · PNG · WEBP · up to 50MB',
+        drop_hint_bgremove: 'JPG · PNG · WEBP · up to 50MB',
+        bgremove_download:  'Download PNG',
     },
     uk: {
         nav_tools:      'Інструменти',
@@ -190,7 +541,18 @@ var TRANSLATIONS = {
         bgremove_title:      'Видалення <span class="accent">фону</span>',
         bgremove_desc:       'AI прибирає фон прямо в браузері — жоден байт не покидає пристрій',
         bgremove_notice:     'Перший запуск завантажує модель (~40 МБ). Далі кешується у браузері. Обробка може зайняти 5–30 сек.',
-        bgremove_download:   'Завантажити PNG',
+        // Audio + fixes
+        nav_audio:          'Аудіо',
+        audio_title:        'Аудіо <span class=\"accent\">Конвертер</span>',
+        audio_desc:         'Конвертуй MP3, OGG, WAV, FLAC без завантаження на сервер',
+        audio_hint:         'MP3 · WAV · OGG · FLAC · M4A · до 100MB',
+        audio_format:       'Формат виводу',
+        audio_quality:      'Якість MP3',
+        support_btn:        'Підтримати ☕',
+        pdf_hint_multi:     'JPG · PNG · WEBP — кілька файлів одночасно',
+        drop_hint_compress: 'JPG · PNG · WEBP · до 50MB',
+        drop_hint_bgremove: 'JPG · PNG · WEBP · до 50MB',
+        bgremove_download:  'Завантажити PNG',
     },
     de: {
         nav_tools:      'Werkzeuge',
@@ -270,7 +632,18 @@ var TRANSLATIONS = {
         bgremove_title:      'Hintergrund <span class="accent">entfernen</span>',
         bgremove_desc:       'KI entfernt den Hintergrund direkt im Browser — 100% privat',
         bgremove_notice:     'Erster Start lädt das Modell (~40 MB). Danach im Browser gespeichert. Verarbeitung kann 5–30s dauern.',
-        bgremove_download:   'PNG herunterladen',
+        // Audio + fixes
+        nav_audio:          'Audio',
+        audio_title:        'Audio <span class=\"accent\">Konverter</span>',
+        audio_desc:         'Konvertiere MP3, OGG, WAV, FLAC ohne Server-Upload',
+        audio_hint:         'MP3 · WAV · OGG · FLAC · M4A · bis 100MB',
+        audio_format:       'Ausgabeformat',
+        audio_quality:      'MP3-Qualität',
+        support_btn:        'Unterstützen ☕',
+        pdf_hint_multi:     'JPG · PNG · WEBP — mehrere Dateien gleichzeitig',
+        drop_hint_compress: 'JPG · PNG · WEBP · bis 50MB',
+        drop_hint_bgremove: 'JPG · PNG · WEBP · bis 50MB',
+        bgremove_download:  'PNG herunterladen',
     }
 };
 
