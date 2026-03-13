@@ -1077,3 +1077,38 @@ convertBtn.addEventListener('click', function() {
              : 'en';
     applyLang(lang);
 })();
+
+// ── HAMBURGER MENU ────────────────────────────────
+(function() {
+    var ham     = document.getElementById('hamburger');
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    if (!ham || !sidebar) return;
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        if (overlay) overlay.classList.add('open');
+        ham.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+        ham.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    ham.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+    });
+
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+
+    // Закрити при кліку на nav item (мобілка)
+    document.querySelectorAll('.nav-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            if (window.innerWidth <= 768) closeSidebar();
+        });
+    });
+})();
