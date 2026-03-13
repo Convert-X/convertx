@@ -454,6 +454,7 @@ var TRANSLATIONS = {
         audio_hint:         'MP3 · WAV · OGG · FLAC · M4A · up to 100MB',
         audio_format:       'Output format',
         audio_quality:      'MP3 Quality',
+        kbps_320:           '320 kbps (best)',
         support_btn:        'Support ☕',
         pdf_hint_multi:     'JPG · PNG · WEBP — multiple files at once',
         drop_hint_compress: 'JPG · PNG · WEBP · up to 50MB',
@@ -545,6 +546,7 @@ var TRANSLATIONS = {
         audio_hint:         'MP3 · WAV · OGG · FLAC · M4A · до 100MB',
         audio_format:       'Формат виводу',
         audio_quality:      'Якість MP3',
+        kbps_320:           '320 kbps (найкраща)',
         support_btn:        'Підтримати ☕',
         pdf_hint_multi:     'JPG · PNG · WEBP — кілька файлів одночасно',
         drop_hint_compress: 'JPG · PNG · WEBP · до 50MB',
@@ -636,6 +638,7 @@ var TRANSLATIONS = {
         audio_hint:         'MP3 · WAV · OGG · FLAC · M4A · bis 100MB',
         audio_format:       'Ausgabeformat',
         audio_quality:      'MP3-Qualität',
+        kbps_320:           '320 kbps (beste)',
         support_btn:        'Unterstützen ☕',
         pdf_hint_multi:     'JPG · PNG · WEBP — mehrere Dateien gleichzeitig',
         drop_hint_compress: 'JPG · PNG · WEBP · bis 50MB',
@@ -1062,4 +1065,15 @@ convertBtn.addEventListener('click', function() {
             tip.style.top = (r.bottom + 10) + 'px';
         }
     });
+})();
+
+// ── ІНІЦІАЛІЗАЦІЯ МОВИ ────────────────────────────
+(function() {
+    var saved = localStorage.getItem('cx-lang');
+    var browserLang = (navigator.language || 'en').slice(0, 2).toLowerCase();
+    var supported = ['en', 'uk', 'de'];
+    var lang = supported.indexOf(saved) >= 0 ? saved
+             : supported.indexOf(browserLang) >= 0 ? browserLang
+             : 'en';
+    applyLang(lang);
 })();
