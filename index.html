@@ -93,7 +93,7 @@
         </ul>
 
         <div class="sidebar-footer">
-            <span class="version">v0.3.3 <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4fffb0;vertical-align:middle;margin-left:2px;" title="cache OK"></span></span>
+            <span class="version">v0.3.4 <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4fffb0;vertical-align:middle;margin-left:2px;" title="cache OK"></span></span>
             <div id="sidebarClock" class="sidebar-digiclock"></div>
             <span class="footer-hint" data-i18n="footer_hint">Більше форматів — скоро</span>
             <div class="privacy-badge" id="privacyBadge">
@@ -118,9 +118,7 @@
     </nav>
 
     <!-- ===== MOBILE BG CLOCK ===== -->
-    <div id="deco-mobile-bg">
-        <img src="clock.png" alt="" draggable="false">
-    </div>
+    <!-- deco-mobile-bg removed on mobile -->
 
     <!-- ===== HAMBURGER (mobile) ===== -->
     <button id="hamburger" aria-label="Menu">
@@ -249,10 +247,11 @@
                 <p class="drop-main" data-i18n="drop_main">Перетягни файл сюди</p>
                 <p class="drop-or" data-i18n="drop_or">або</p>
                 <label for="fileInput" class="btn-choose" data-i18n="drop_choose">Choose file</label>
-                <input type="file" id="fileInput" accept="image/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
-                <p class="drop-hint" data-i18n="drop_hint_img">JPG · PNG · WEBP · GIF · до 50MB</p>
+                <input type="file" id="fileInput" accept="image/*,.heic,.heif,.dng,.svg" multiple style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
+                <p class="drop-hint" data-i18n="drop_hint_img">JPG · PNG · WEBP · AVIF · HEIC · SVG · DNG · GIF · до 50MB</p>
             </div>
 
+            <div id="batchList" class="batch-list" hidden></div>
             <div class="file-info-bar" id="fileInfo" hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
                 <span id="fileName" class="file-name"></span>
@@ -267,6 +266,8 @@
                         <option value="jpeg">JPG</option>
                         <option value="png">PNG</option>
                         <option value="webp">WEBP</option>
+                        <option value="avif">AVIF</option>
+                        <option value="svg-export">SVG (з растру)</option>
                     </select>
                 </div>
                 <div class="control-card">

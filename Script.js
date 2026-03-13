@@ -209,6 +209,8 @@
 // CLOCK EASTER EGG
 // ══════════════════════════════════════════════
 (function() {
+    // Пасхалка тільки на десктопі (не на тачскріні)
+    if (window.matchMedia('(pointer: coarse)').matches) return;
     var clockImg = document.getElementById('clockImg');
     var clockScene = document.getElementById('clockScene');
     if (!clockScene) return;
@@ -276,15 +278,7 @@
     // Desktop
     clockScene.addEventListener('click', handleClockClick);
 
-    // Mobile — через deco-mobile-bg (де clock.png видно на телефоні)
-    var mobileBg = document.getElementById('deco-mobile-bg');
-    if (mobileBg) {
-        mobileBg.style.pointerEvents = 'auto';
-        mobileBg.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            handleClockClick();
-        });
-    }
+    // Mobile easter egg removed
 })();
 
 
@@ -292,15 +286,18 @@
 (function() {
     var el = document.getElementById('sidebarClock');
     if (!el) return;
-    var blink = true;
     function tick() {
         var now = new Date();
         var h = now.getHours().toString().padStart(2,'0');
         var m = now.getMinutes().toString().padStart(2,'0');
         var s = now.getSeconds().toString().padStart(2,'0');
-        var sep = blink ? ':' : '<span style="opacity:.2">:</span>';
-        blink = !blink;
-        el.innerHTML = h + sep + m + '<span style="font-size:.7em;opacity:.6">' + sep + s + '</span>';
+        var op = now.getSeconds() % 2 === 0 ? '1' : '0.25';
+        el.innerHTML = h
+            + '<span style="opacity:' + op + ';display:inline-block;width:.5em;text-align:center">:</span>'
+            + m
+            + '<span style="font-size:.72em;opacity:.55"> '
+            + '<span style="opacity:' + op + ';display:inline-block;width:.5em;text-align:center">:</span>'
+            + s + '</span>';
     }
     tick();
     setInterval(tick, 500);
@@ -783,33 +780,174 @@ var convertActions  = document.getElementById('convertActions');
 var progressWrap    = document.getElementById('progressWrap');
 var progressFill    = document.getElementById('progressFill');
 var progressLabel   = document.getElementById('progressLabel');
+var batchList       = document.getElementById('batchList');
 
-var currentConvertFile = null;
+var currentFiles = []; // масив файлів (batch)
+var isBatch = false;
 
-// Drag & drop для конвертації
-setupDragDrop(dropZone, fileInput, function(file) {
-    currentConvertFile = file;
-    fileName.textContent = file.name;
-    fileSize.textContent = formatBytes(file.size);
-    fileInfo.hidden = false;
+// ── HEIC → Blob через heic2any (lazy load) ──
+function loadHeic2any(cb) {
+    if (window.heic2any) { cb(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
+    s.onload = cb;
+    s.onerror = function() { alert('Could not load HEIC converter.'); };
+    document.head.appendChild(s);
+}
+
+// ── SVG → PNG через canvas ──
+function svgToPng(svgBlob, w, h, cb) {
+    var url = URL.createObjectURL(svgBlob);
+    var img = new Image();
+    img.onload = function() {
+        var cw = w || img.width || 1024;
+        var ch = h || img.height || 1024;
+        var c = document.createElement('canvas');
+        c.width = cw; c.height = ch;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        cb(c.toDataURL('image/png', 1));
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); cb(null); };
+    img.src = url;
+}
+
+// ── Растр → SVG (трасування через Path2D — базова обводка) ──
+function rasterToSvg(canvas) {
+    // Простий SVG з embedded PNG — сумісний і корисний для веб
+    var png = canvas.toDataURL('image/png');
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + canvas.width + '" height="' + canvas.height + '">'
+            + '<image href="' + png + '" width="' + canvas.width + '" height="' + canvas.height + '"/></svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+// ── Конвертувати один файл → Promise<{url, ext, size}> ──
+function convertFile(file, format, quality) {
+    return new Promise(function(resolve, reject) {
+        var mime = 'image/' + format;
+        var ext  = format === 'jpeg' ? 'jpg' : format === 'svg-export' ? 'svg' : format;
+
+        // HEIC / HEIF
+        if (/\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif') {
+            loadHeic2any(function() {
+                heic2any({ blob: file, toType: 'image/jpeg', quality: quality })
+                    .then(function(blob) {
+                        resolve({ url: URL.createObjectURL(blob), ext: 'jpg', size: blob.size });
+                    })
+                    .catch(reject);
+            });
+            return;
+        }
+
+        // DNG (ProRAW) — рендер через Image + canvas
+        if (/\.dng$/i.test(file.name)) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = new Image();
+                img.onload = function() {
+                    var c = document.createElement('canvas');
+                    c.width = img.width; c.height = img.height;
+                    c.getContext('2d').drawImage(img, 0, 0);
+                    var result = c.toDataURL('image/jpeg', quality);
+                    var blob = dataURItoBlob(result);
+                    resolve({ url: URL.createObjectURL(blob), ext: 'jpg', size: blob.size });
+                };
+                img.onerror = function() { reject(new Error('Cannot decode DNG')); };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        // SVG input → PNG output
+        if (file.type === 'image/svg+xml' || /\.svg$/i.test(file.name)) {
+            svgToPng(file, 0, 0, function(dataUrl) {
+                if (!dataUrl) { reject(new Error('SVG decode failed')); return; }
+                var blob = dataURItoBlob(dataUrl);
+                resolve({ url: URL.createObjectURL(blob), ext: 'png', size: blob.size });
+            });
+            return;
+        }
+
+        // Стандартна конвертація через canvas
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                var c = document.createElement('canvas');
+                c.width = img.width; c.height = img.height;
+                var ctx = c.getContext('2d');
+                // Білий фон для форматів без альфа
+                if (format === 'jpeg') {
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, c.width, c.height);
+                }
+                ctx.drawImage(img, 0, 0);
+
+                var result, blob;
+                if (format === 'svg-export') {
+                    result = rasterToSvg(c);
+                    blob = dataURItoBlob(result);
+                } else {
+                    result = c.toDataURL(mime, quality);
+                    blob = dataURItoBlob(result);
+                }
+                resolve({ url: URL.createObjectURL(blob), ext: ext, size: blob.size });
+            };
+            img.onerror = function() { reject(new Error('Cannot decode image')); };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// ── UI helpers ──
+function showFiles(files) {
+    currentFiles = Array.from(files);
+    isBatch = currentFiles.length > 1;
+
+    if (isBatch) {
+        // Batch mode
+        fileInfo.hidden = true;
+        batchList.hidden = false;
+        batchList.innerHTML = '<div class="batch-count">📁 ' + currentFiles.length + ' файлів вибрано</div>'
+            + currentFiles.map(function(f, i) {
+                return '<div class="batch-item" id="bitem-' + i + '">'
+                    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>'
+                    + '<span class="batch-name">' + f.name + '</span>'
+                    + '<span class="batch-size">' + formatBytes(f.size) + '</span>'
+                    + '<span class="batch-status" id="bstat-' + i + '">⏳</span>'
+                    + '</div>';
+            }).join('');
+    } else {
+        batchList.hidden = true;
+        fileInfo.hidden = false;
+        fileName.textContent = currentFiles[0].name;
+        fileSize.textContent = formatBytes(currentFiles[0].size);
+    }
+
     convertControls.hidden = false;
     convertActions.hidden = false;
     convertBtn.disabled = false;
     downloadBtn.hidden = true;
     progressWrap.hidden = true;
+}
+
+setupDragDrop(dropZone, fileInput, function(file) { showFiles([file]); });
+
+fileInput.addEventListener('change', function() {
+    if (this.files && this.files.length > 0) showFiles(this.files);
 });
 
-// Слайдер якості
-qualityRange.addEventListener('input', function() {
-    qualityValue.textContent = this.value;
-});
+qualityRange.addEventListener('input', function() { qualityValue.textContent = this.value; });
 
-// Очистити файл
 clearFileBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    currentConvertFile = null;
+    currentFiles = [];
     fileInput.value = '';
     fileInfo.hidden = true;
+    batchList.hidden = true;
     convertControls.hidden = true;
     convertActions.hidden = true;
     downloadBtn.hidden = true;
@@ -817,948 +955,111 @@ clearFileBtn.addEventListener('click', function(e) {
     convertBtn.disabled = true;
 });
 
-// Конвертація
+// ── КОНВЕРТАЦІЯ ──
 convertBtn.addEventListener('click', function() {
-    if (!currentConvertFile) {
-        alert('Виберіть файл!');
-        return;
-    }
+    if (!currentFiles.length) { alert('Виберіть файл!'); return; }
 
     var format  = formatSelect.value;
     var quality = parseInt(qualityRange.value) / 100;
-    var mime    = 'image/' + format;
+    var T = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
 
-    // Показати прогрес
     progressWrap.hidden = false;
     progressFill.style.width = '0%';
-    progressLabel.textContent = (TRANSLATIONS[currentLang]||TRANSLATIONS['en']).prog_reading||'Reading...';
+    progressLabel.textContent = T.prog_converting || 'Converting...';
     convertBtn.disabled = true;
     downloadBtn.hidden = true;
 
-    var reader = new FileReader();
-
-    reader.onprogress = function(e) {
-        if (e.lengthComputable) {
-            var pct = (e.loaded / e.total) * 40;
-            progressFill.style.width = pct + '%';
-        }
-    };
-
-    reader.onload = function(e) {
-        progressFill.style.width = '50%';
-        progressLabel.textContent = (TRANSLATIONS[currentLang]||TRANSLATIONS['en']).prog_converting||'Converting...';
-
-        var img = new Image();
-        img.onload = function() {
-            progressFill.style.width = '75%';
-
-            var canvas = document.createElement('canvas');
-            canvas.width  = img.width;
-            canvas.height = img.height;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-
-            var result = canvas.toDataURL(mime, quality);
-            var blob   = dataURItoBlob(result);
-            var url    = URL.createObjectURL(blob);
-
-            // Розширення файлу
-            var ext = format === 'jpeg' ? 'jpg' : format;
-            var origName = currentConvertFile.name.replace(/\.[^/.]+$/, '');
-
-            downloadBtn.href     = url;
-            downloadBtn.download = origName + '_converted.' + ext;
-            downloadBtn.hidden   = false;
-
-            progressFill.style.width = '100%';
-            progressLabel.textContent = 'Готово! (' + formatBytes(blob.size) + ')';
-
-            convertBtn.disabled = false;
-
-            // Приховати прогрес через 2 сек
-            setTimeout(function() {
-                progressWrap.hidden = true;
-            }, 2000);
-        };
-        img.src = e.target.result;
-    };
-
-    reader.onerror = function() {
-        progressWrap.hidden = true;
-        convertBtn.disabled = false;
-        alert('Помилка зчитування файлу. Спробуй ще раз.');
-    };
-
-    reader.readAsDataURL(currentConvertFile);
-});
-
-
-// ── SECTION 2: ПОКРАЩЕННЯ ЯКОСТІ ───────────────
-
-var dropZoneEnhance     = document.getElementById('dropZoneEnhance');
-var fileInputEnhance    = document.getElementById('fileInputEnhance');
-var enhanceWorkspace    = document.getElementById('enhanceWorkspace');
-var previewImg          = document.getElementById('previewImg');
-var exportCanvas        = document.getElementById('exportCanvas');
-var brightnessRange     = document.getElementById('brightnessRange');
-var contrastRange       = document.getElementById('contrastRange');
-var saturationRange     = document.getElementById('saturationRange');
-var sharpnessRange      = document.getElementById('sharpnessRange');
-var brightnessValue     = document.getElementById('brightnessValue');
-var contrastValue       = document.getElementById('contrastValue');
-var saturationValue     = document.getElementById('saturationValue');
-var sharpValue          = document.getElementById('sharpValue');
-var applyEnhanceBtn     = document.getElementById('applyEnhanceBtn');
-var resetEnhanceBtn     = document.getElementById('resetEnhanceBtn');
-var downloadEnhanceBtn  = document.getElementById('downloadEnhanceBtn');
-
-var enhanceImg = null; // оригінальний Image об'єкт
-
-// Drag & drop для покращення
-setupDragDrop(dropZoneEnhance, fileInputEnhance, function(file) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        var img = new Image();
-        img.onload = function() {
-            enhanceImg = img;
-            previewImg.src = e.target.result;
-            enhanceWorkspace.hidden = false;
-            downloadEnhanceBtn.hidden = true;
-            updatePreview();
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-});
-
-// Слайдери покращення — оновлення мітки і превью
-function bindEnhanceSlider(slider, label) {
-    slider.addEventListener('input', function() {
-        label.textContent = this.value;
-        updatePreview();
-    });
-}
-
-bindEnhanceSlider(brightnessRange, brightnessValue);
-bindEnhanceSlider(contrastRange,   contrastValue);
-bindEnhanceSlider(saturationRange, saturationValue);
-bindEnhanceSlider(sharpnessRange,  sharpValue);
-
-// Оновити превью через CSS filter (миттєво)
-function updatePreview() {
-    if (!enhanceImg) return;
-
-    var brightness  = parseInt(brightnessRange.value);
-    var contrast    = parseInt(contrastRange.value);
-    var saturation  = parseInt(saturationRange.value);
-
-    // CSS filter для live-preview
-    var bPct  = 100 + brightness;         // 0–200%
-    var cPct  = 100 + contrast;           // 0–200%
-    var sPct  = 100 + saturation;         // 0–200%
-
-    previewImg.style.filter = [
-        'brightness(' + bPct + '%)',
-        'contrast(' + cPct + '%)',
-        'saturate(' + sPct + '%)'
-    ].join(' ');
-}
-
-// Скинути всі значення
-resetEnhanceBtn.addEventListener('click', function() {
-    brightnessRange.value = 0;  brightnessValue.textContent = '0';
-    contrastRange.value   = 0;  contrastValue.textContent   = '0';
-    saturationRange.value = 0;  saturationValue.textContent = '0';
-    sharpnessRange.value  = 0;  sharpValue.textContent      = '0';
-    if (previewImg) previewImg.style.filter = '';
-    downloadEnhanceBtn.hidden = true;
-});
-
-// Застосувати + завантажити через canvas
-applyEnhanceBtn.addEventListener('click', function() {
-    if (!enhanceImg) return;
-
-    var brightness = parseInt(brightnessRange.value);
-    var contrast   = parseInt(contrastRange.value);
-    var saturation = parseInt(saturationRange.value);
-    var sharpness  = parseInt(sharpnessRange.value) / 100;
-
-    var w = enhanceImg.naturalWidth;
-    var h = enhanceImg.naturalHeight;
-
-    exportCanvas.width  = w;
-    exportCanvas.height = h;
-    var ctx = exportCanvas.getContext('2d');
-
-    // Застосувати CSS фільтри через canvas
-    var bPct = 100 + brightness;
-    var cPct = 100 + contrast;
-    var sPct = 100 + saturation;
-
-    ctx.filter = [
-        'brightness(' + bPct + '%)',
-        'contrast(' + cPct + '%)',
-        'saturate(' + sPct + '%)'
-    ].join(' ');
-
-    ctx.drawImage(enhanceImg, 0, 0, w, h);
-
-    // Застосувати sharpen конволюцію якщо потрібно
-    if (sharpness > 0) {
-        ctx.filter = 'none';
-        applySharpen(ctx, w, h, sharpness);
-    }
-
-    exportCanvas.toBlob(function(blob) {
-        var url = URL.createObjectURL(blob);
-        downloadEnhanceBtn.href     = url;
-        downloadEnhanceBtn.download = 'enhanced.png';
-        downloadEnhanceBtn.hidden   = false;
-    }, 'image/png');
-});
-
-// Різкість через матрицю конволюції
-function applySharpen(ctx, width, height, amount) {
-    var imageData = ctx.getImageData(0, 0, width, height);
-    var data      = imageData.data;
-    var w         = width;
-
-    // Ядро різкості (unsharp mask variant)
-    var k = amount * 0.6;
-    var kernel = [
-         0,    -k,      0,
-        -k,  1 + 4*k,  -k,
-         0,    -k,      0
-    ];
-
-    var output = new Uint8ClampedArray(data.length);
-
-    for (var y = 1; y < height - 1; y++) {
-        for (var x = 1; x < width - 1; x++) {
-            var idx = (y * w + x) * 4;
-            var r = 0, g = 0, b = 0;
-            var ki = 0;
-
-            for (var ky = -1; ky <= 1; ky++) {
-                for (var kx = -1; kx <= 1; kx++) {
-                    var ni = ((y + ky) * w + (x + kx)) * 4;
-                    var kv = kernel[ki++];
-                    r += data[ni]     * kv;
-                    g += data[ni + 1] * kv;
-                    b += data[ni + 2] * kv;
-                }
-            }
-
-            output[idx]     = Math.min(255, Math.max(0, r));
-            output[idx + 1] = Math.min(255, Math.max(0, g));
-            output[idx + 2] = Math.min(255, Math.max(0, b));
-            output[idx + 3] = data[idx + 3]; // alpha без змін
-        }
-    }
-
-    // Краї — просто копіюємо
-    for (var y2 = 0; y2 < height; y2++) {
-        for (var x2 = 0; x2 < width; x2++) {
-            if (y2 === 0 || y2 === height-1 || x2 === 0 || x2 === width-1) {
-                var ei = (y2 * w + x2) * 4;
-                output[ei]     = data[ei];
-                output[ei + 1] = data[ei + 1];
-                output[ei + 2] = data[ei + 2];
-                output[ei + 3] = data[ei + 3];
-            }
-        }
-    }
-
-    imageData.data.set(output);
-    ctx.putImageData(imageData, 0, 0);
-}
-
-
-// ── HAMBURGER (MOBILE) ──────────────────────────
-
-var hamburger       = document.getElementById('hamburger');
-var sidebarEl       = document.getElementById('sidebar');
-var sidebarOverlay  = document.getElementById('sidebar-overlay');
-
-function closeSidebar() {
-    hamburger.classList.remove('open');
-    sidebarEl.classList.remove('open');
-    sidebarOverlay.classList.remove('open');
-}
-
-hamburger.addEventListener('click', function() {
-    var isOpen = sidebarEl.classList.toggle('open');
-    hamburger.classList.toggle('open', isOpen);
-    sidebarOverlay.classList.toggle('open', isOpen);
-});
-
-sidebarOverlay.addEventListener('click', closeSidebar);
-
-// Закривати sidebar при виборі пункту меню на мобілці
-document.querySelectorAll('.nav-item:not(.soon)').forEach(function(item) {
-    item.addEventListener('click', function() {
-        if (window.innerWidth <= 768) closeSidebar();
-    });
-});
-
-
-// ── SECTION 4: СТИСНЕННЯ ────────────────────────
-
-var dropZoneCompress    = document.getElementById('dropZoneCompress');
-var fileInputCompress   = document.getElementById('fileInputCompress');
-var compressControls    = document.getElementById('compressControls');
-var compressRange       = document.getElementById('compressRange');
-var compressValue       = document.getElementById('compressValue');
-var compressOrigSize    = document.getElementById('compressOrigSize');
-var compressNewSize     = document.getElementById('compressNewSize');
-var compressBtn         = document.getElementById('compressBtn');
-var downloadCompressBtn = document.getElementById('downloadCompressBtn');
-var compressProgress    = document.getElementById('compressProgress');
-var compressProgressFill= document.getElementById('compressProgressFill');
-var compressProgressLabel= document.getElementById('compressProgressLabel');
-
-var compressSourceFile  = null;
-
-setupDragDrop(dropZoneCompress, fileInputCompress, function(file) {
-    compressSourceFile = file;
-    compressOrigSize.textContent = formatBytes(file.size);
-    compressNewSize.textContent  = '—';
-    compressControls.hidden      = false;
-    downloadCompressBtn.hidden   = true;
-    compressProgress.hidden      = true;
-});
-
-compressRange.addEventListener('input', function() {
-    compressValue.textContent = this.value;
-    if (compressSourceFile) estimateCompressSize();
-});
-
-function estimateCompressSize() {
-    var quality = parseInt(compressRange.value) / 100;
-    // Груба оцінка: JPG при якості Q ≈ originalSize * Q * 0.35 (JPG compression ratio)
-    var est = Math.round(compressSourceFile.size * quality * 0.38);
-    compressNewSize.textContent = formatBytes(est) + ' ~';
-}
-
-compressBtn.addEventListener('click', function() {
-    if (!compressSourceFile) return;
-
-    var quality = parseInt(compressRange.value) / 100;
-    compressProgress.hidden = false;
-    compressProgressFill.style.width = '0%';
-    compressProgressLabel.textContent = 'Зчитування...';
-    compressBtn.disabled = true;
-    downloadCompressBtn.hidden = true;
-
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        compressProgressFill.style.width = '40%';
-        var img = new Image();
-        img.onload = function() {
-            compressProgressFill.style.width = '65%';
-            var canvas = document.createElement('canvas');
-            canvas.width  = img.width;
-            canvas.height = img.height;
-            canvas.getContext('2d').drawImage(img, 0, 0);
-            compressProgressFill.style.width = '85%';
-            canvas.toBlob(function(blob) {
-                var url = URL.createObjectURL(blob);
-                downloadCompressBtn.href     = url;
-                downloadCompressBtn.download = 'compressed_' + compressSourceFile.name;
-                downloadCompressBtn.hidden   = false;
-                compressNewSize.textContent  = formatBytes(blob.size);
-                compressProgressFill.style.width = '100%';
-                compressProgressLabel.textContent = 'Готово! ' + formatBytes(blob.size);
-                compressBtn.disabled = false;
-                setTimeout(function() { compressProgress.hidden = true; }, 2000);
-            }, 'image/jpeg', quality);
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(compressSourceFile);
-});
-
-
-// ── SECTION 5: PDF ──────────────────────────────
-
-var dropZonePdf     = document.getElementById('dropZonePdf');
-var fileInputPdf    = document.getElementById('fileInputPdf');
-var pdfFileList     = document.getElementById('pdfFileList');
-var pdfActions      = document.getElementById('pdfActions');
-var makePdfBtn      = document.getElementById('makePdfBtn');
-var downloadPdfBtn  = document.getElementById('downloadPdfBtn');
-var pdfProgress     = document.getElementById('pdfProgress');
-var pdfProgressFill = document.getElementById('pdfProgressFill');
-var pdfProgressLabel= document.getElementById('pdfProgressLabel');
-
-var pdfFiles = [];
-
-// PDF mode switcher
-document.querySelectorAll('[data-pdf-mode]').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-        document.querySelectorAll('[data-pdf-mode]').forEach(function(t) { t.classList.remove('active'); });
-        this.classList.add('active');
-        var mode = this.dataset.pdfMode;
-        document.getElementById('pdfImgMode').hidden  = (mode !== 'img2pdf');
-        document.getElementById('pdfToImgMode').hidden = (mode !== 'pdf2img');
-    });
-});
-
-// Drag & drop для PDF (підтримка кількох файлів)
-dropZonePdf.addEventListener('click', function(e) {
-    var tag = e.target.tagName.toLowerCase();
-    if (tag === 'label' || tag === 'input') return;
-    fileInputPdf.click();
-});
-dropZonePdf.addEventListener('dragover', function(e) {
-    e.preventDefault();
-    dropZonePdf.classList.add('drag-over');
-});
-dropZonePdf.addEventListener('dragleave', function() {
-    dropZonePdf.classList.remove('drag-over');
-});
-dropZonePdf.addEventListener('drop', function(e) {
-    e.preventDefault();
-    dropZonePdf.classList.remove('drag-over');
-    addPdfFiles(Array.from(e.dataTransfer.files).filter(function(f) { return f.type.startsWith('image/'); }));
-});
-fileInputPdf.addEventListener('change', function() {
-    addPdfFiles(Array.from(this.files));
-});
-
-function addPdfFiles(files) {
-    pdfFiles = pdfFiles.concat(files);
-    renderPdfFileList();
-}
-
-function renderPdfFileList() {
-    pdfFileList.innerHTML = '';
-    pdfFiles.forEach(function(f, i) {
-        var item = document.createElement('div');
-        item.className = 'pdf-file-item';
-        item.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>'
-            + '<span>' + f.name + '</span>'
-            + '<span class="pdf-file-size">' + formatBytes(f.size) + '</span>';
-        pdfFileList.appendChild(item);
-    });
-    pdfFileList.hidden = (pdfFiles.length === 0);
-    pdfActions.hidden  = (pdfFiles.length === 0);
-}
-
-makePdfBtn.addEventListener('click', function() {
-    if (pdfFiles.length === 0) return;
-    if (typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') {
-        alert('jsPDF не завантажено. Перевір з\'єднання з інтернетом.');
-        return;
-    }
-
-    var jsPDF = window.jspdf.jsPDF;
-    pdfProgress.hidden = false;
-    pdfProgressFill.style.width = '0%';
-    pdfProgressLabel.textContent = TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang]['prog_processing'] || 'Processing...';
-    makePdfBtn.disabled = true;
-    downloadPdfBtn.hidden = true;
-
-    var pdf = null;
-    var index = 0;
-
-    function processNext() {
-        if (index >= pdfFiles.length) {
-            var blob = pdf.output('blob');
-            var url  = URL.createObjectURL(blob);
-            downloadPdfBtn.href     = url;
-            downloadPdfBtn.download = 'convertx_export.pdf';
-            downloadPdfBtn.hidden   = false;
-            pdfProgressFill.style.width = '100%';
-            pdfProgressLabel.textContent = (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang]['done'] || '✓ Done!') + ' ' + pdfFiles.length + ' ' + (currentLang === 'uk' ? 'стор.' : currentLang === 'de' ? 'S.' : 'p.');
-            makePdfBtn.disabled = false;
-            setTimeout(function() { pdfProgress.hidden = true; }, 2000);
-            return;
-        }
-
-        var pct = Math.round((index / pdfFiles.length) * 90);
-        pdfProgressFill.style.width = pct + '%';
-        pdfProgressLabel.textContent = ((TRANSLATIONS[currentLang]||TRANSLATIONS['en']).prog_processing||'Processing...') + ' ' + (index+1) + ' / ' + pdfFiles.length;
-
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var img = new Image();
-            img.onload = function() {
-                var w = img.width;
-                var h = img.height;
-                var orientation = (w > h) ? 'l' : 'p';
-
-                if (pdf === null) {
-                    pdf = new jsPDF({ orientation: orientation, unit: 'px', format: [w, h] });
+    if (isBatch && currentFiles.length > 1) {
+        // ── BATCH ──
+        var total = currentFiles.length;
+        var done  = 0;
+        var links = [];
+
+        function processNext(i) {
+            if (i >= total) {
+                // Всі готові — zip через download по одному або zip
+                progressFill.style.width = '100%';
+                progressLabel.textContent = T.prog_done || 'Done! ' + total + ' files';
+                convertBtn.disabled = false;
+
+                // Якщо один файл — прямий лінк, якщо багато — завантажуємо всі
+                if (links.length === 1) {
+                    downloadBtn.href = links[0].url;
+                    downloadBtn.download = links[0].name;
+                    downloadBtn.hidden = false;
                 } else {
-                    pdf.addPage([w, h], orientation);
+                    // Завантажуємо файли послідовно через мікрозатримку
+                    links.forEach(function(l, idx) {
+                        setTimeout(function() {
+                            var a = document.createElement('a');
+                            a.href = l.url; a.download = l.name;
+                            document.body.appendChild(a); a.click();
+                            setTimeout(function() { a.remove(); URL.revokeObjectURL(l.url); }, 1000);
+                        }, idx * 400);
+                    });
+                    progressLabel.textContent = '✅ ' + total + ' файлів завантажуються...';
                 }
-
-                pdf.addImage(e.target.result, 'JPEG', 0, 0, w, h);
-                index++;
-                processNext();
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(pdfFiles[index]);
-    }
-
-    processNext();
-});
-
-
-
-var dropZoneUpscale     = document.getElementById('dropZoneUpscale');
-var fileInputUpscale    = document.getElementById('fileInputUpscale');
-var upscaleControls     = document.getElementById('upscaleControls');
-var scaleSelect         = document.getElementById('scaleSelect');
-var origSizeEl          = document.getElementById('origSize');
-var newSizeEl           = document.getElementById('newSize');
-var upscaleBtn          = document.getElementById('upscaleBtn');
-var downloadUpscaleBtn  = document.getElementById('downloadUpscaleBtn');
-var upscaleProgress     = document.getElementById('upscaleProgress');
-var upscaleProgressFill = document.getElementById('upscaleProgressFill');
-var upscaleProgressLabel= document.getElementById('upscaleProgressLabel');
-// Живуть в модалі — отримуємо ліниво
-function getUpscaleOrigImg()   { return document.getElementById('upscaleOrigImg'); }
-function getUpscaleResultImg() { return document.getElementById('upscaleResultImg'); }
-var upscaleCanvas       = document.getElementById('upscaleCanvas');
-var methodTabs          = document.querySelectorAll('.method-tab');
-var aiNotice            = document.getElementById('aiNotice');
-
-var upscaleSourceImg = null;
-var currentMethod    = 'lanczos';
-
-// ── Вибір методу ──
-methodTabs.forEach(function(tab) {
-    tab.addEventListener('click', function() {
-        methodTabs.forEach(function(t) { t.classList.remove('active'); });
-        this.classList.add('active');
-        currentMethod = this.dataset.method;
-        aiNotice.hidden = (currentMethod !== 'ai');
-        downloadUpscaleBtn.hidden = true;
-    });
-});
-
-// ── Upscale: пряма обробка файлів ──
-(function() {
-    var dz  = dropZoneUpscale;
-    var inp = fileInputUpscale;
-
-    // Клік на зону (але НЕ на label/input) — відкриваємо діалог
-    dz.addEventListener('click', function(e) {
-        if (e.target.closest('label') || e.target === inp) return;
-        inp.click();
-    });
-
-    // Drag & Drop
-    dz.addEventListener('dragover',  function(e) { e.preventDefault(); dz.classList.add('drag-over'); });
-    dz.addEventListener('dragleave', function()  { dz.classList.remove('drag-over'); });
-    dz.addEventListener('drop', function(e) {
-        e.preventDefault();
-        dz.classList.remove('drag-over');
-        var f = e.dataTransfer.files[0];
-        if (f && f.type.startsWith('image/')) handleUpscaleFile(f);
-    });
-
-    // Вибір через діалог
-    inp.addEventListener('change', function() {
-        if (inp.files[0]) handleUpscaleFile(inp.files[0]);
-        inp.value = '';
-    });
-})();
-
-function handleUpscaleFile(file) {
-    var reader = new FileReader();
-    reader.onerror = function() { alert('Помилка читання файлу'); };
-    reader.onload = function(e) {
-        var img = new Image();
-        img.onerror = function() { alert('Не вдалось завантажити зображення'); };
-        img.onload = function() {
-            var MAX_SIDE = 2000;
-            var srcW = img.naturalWidth, srcH = img.naturalHeight;
-
-            if (srcW > MAX_SIDE || srcH > MAX_SIDE) {
-                var ratio = Math.min(MAX_SIDE / srcW, MAX_SIDE / srcH);
-                var newW  = Math.round(srcW * ratio);
-                var newH  = Math.round(srcH * ratio);
-                var tmp   = document.createElement('canvas');
-                tmp.width = newW; tmp.height = newH;
-                tmp.getContext('2d').drawImage(img, 0, 0, newW, newH);
-                var resizedUrl = tmp.toDataURL('image/jpeg', 0.92);
-                var resized = new Image();
-                resized.onload = function() {
-                    upscaleSourceImg = resized;
-                    var _oi=getUpscaleOrigImg(); if(_oi) _oi.src = resizedUrl;
-                    applyUpscaleLoad(file.name, newW + '×' + newH + ' (стиснено)');
-                };
-                resized.src = resizedUrl;
-            } else {
-                upscaleSourceImg = img;
-                var _oi2=getUpscaleOrigImg(); if(_oi2) _oi2.src = e.target.result;
-                applyUpscaleLoad(file.name, srcW + '×' + srcH);
+                return;
             }
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
 
-function applyUpscaleLoad(name, sizeInfo) {
-    upscaleControls.hidden = false;
-    downloadUpscaleBtn.hidden = true;
-    var nameEl = dropZoneUpscale.querySelector('.drop-main');
-    if (nameEl) nameEl.textContent = '✓ ' + name + '  (' + sizeInfo + ')';
-    dropZoneUpscale.classList.add('has-file');
-    updateSizePreview();
-}
+            var stat = document.getElementById('bstat-' + i);
+            if (stat) stat.textContent = '⚙️';
 
+            convertFile(currentFiles[i], format, quality).then(function(res) {
+                done++;
+                if (stat) { stat.textContent = '✅'; stat.className = 'batch-status done'; }
+                var origName = currentFiles[i].name.replace(/\.[^/.]+$/, '');
+                links.push({ url: res.url, name: origName + '_cx.' + res.ext });
+                progressFill.style.width = (done / total * 100) + '%';
+                processNext(i + 1);
+            }).catch(function(err) {
+                done++;
+                if (stat) { stat.textContent = '❌'; stat.className = 'batch-status err'; }
+                progressFill.style.width = (done / total * 100) + '%';
+                processNext(i + 1);
+            });
+        }
 
-// ── Модал BA ──
-var baModal    = document.getElementById('baModal');
-var closeBABtn = document.getElementById('closeBAModal');
-if (closeBABtn) closeBABtn.addEventListener('click', function() { baModal.hidden = true; });
-baModal && baModal.addEventListener('click', function(e) { if (e.target === baModal) baModal.hidden = true; });
-document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && baModal && !baModal.hidden) baModal.hidden = true; });
+        processNext(0);
 
-
-function updateSizePreview() {
-    if (!upscaleSourceImg) return;
-    var scale = parseInt(scaleSelect.value);
-    var ow = upscaleSourceImg.naturalWidth;
-    var oh = upscaleSourceImg.naturalHeight;
-    origSizeEl.textContent = ow + '×' + oh;
-    newSizeEl.textContent  = (ow * scale) + '×' + (oh * scale);
-}
-scaleSelect.addEventListener('change', updateSizePreview);
-
-// ── Кнопка Upscale ──
-upscaleBtn.addEventListener('click', function() {
-    if (!upscaleSourceImg) return;
-    downloadUpscaleBtn.hidden = true;
-    upscaleProgress.hidden = false;
-    setProgress(0, '...');
-    upscaleBtn.disabled = true;
-
-    if (currentMethod === 'lanczos') {
-        setTimeout(runLanczos, 30);
     } else {
-        setTimeout(runAI, 30);
+        // ── SINGLE FILE ──
+        progressFill.style.width = '20%';
+        convertFile(currentFiles[0], format, quality).then(function(res) {
+            progressFill.style.width = '100%';
+            progressLabel.textContent = (T.prog_done || 'Done!') + ' (' + formatBytes(res.size) + ')';
+
+            var origName = currentFiles[0].name.replace(/\.[^/.]+$/, '');
+            downloadBtn.href     = res.url;
+            downloadBtn.download = origName + '_converted.' + res.ext;
+            downloadBtn.hidden   = false;
+            convertBtn.disabled  = false;
+
+            setTimeout(function() { progressWrap.hidden = true; }, 2500);
+        }).catch(function(err) {
+            progressLabel.textContent = '❌ ' + (err.message || 'Error');
+            progressFill.style.width = '0%';
+            convertBtn.disabled = false;
+        });
     }
 });
 
-function setProgress(pct, label) {
-    upscaleProgressFill.style.width = pct + '%';
-    if (label) upscaleProgressLabel.textContent = label;
-}
 
-// ══════════════════════════════════════════
-// LANCZOS — чанкована обробка (не блокує UI)
-// ══════════════════════════════════════════
-function runLanczos() {
-    var scaleInt = parseInt(scaleSelect.value);
-    var srcW  = upscaleSourceImg.naturalWidth;
-    var srcH  = upscaleSourceImg.naturalHeight;
-    var dstW  = srcW * scaleInt;
-    var dstH  = srcH * scaleInt;
 
-    // Обмежуємо вихід до 2K — більше крашає браузер
-    var MAX_OUT = 2048;
-    if (dstW > MAX_OUT || dstH > MAX_OUT) {
-        var ratio = Math.min(MAX_OUT / srcW, MAX_OUT / srcH);
-        dstW = Math.round(srcW * ratio);
-        dstH = Math.round(srcH * ratio);
-        setProgress(5, 'Обмежено до ' + dstW + 'x' + dstH);
-    }
-    // Реальний scale для Lanczos маппінгу (може бути float!)
-    var scale = dstW / srcW;
-
-    setProgress(10, 'Зчитування пікселів...');
-
-    var srcCanvas = document.createElement('canvas');
-    srcCanvas.width = srcW; srcCanvas.height = srcH;
-    srcCanvas.getContext('2d').drawImage(upscaleSourceImg, 0, 0);
-    var srcData = srcCanvas.getContext('2d').getImageData(0, 0, srcW, srcH).data;
-
-    upscaleCanvas.width = dstW;
-    upscaleCanvas.height = dstH;
-    var dstCtx  = upscaleCanvas.getContext('2d');
-    var dstData = dstCtx.createImageData(dstW, dstH);
-    var dst     = dstData.data;
-
-    var LOBES = 3; // Lanczos-3 — чіткіші краї
-    function kernel(x) {
-        if (x === 0) return 1;
-        if (Math.abs(x) >= LOBES) return 0;
-        var px = Math.PI * x;
-        return (LOBES * Math.sin(px) * Math.sin(px / LOBES)) / (px * px);
-    }
-
-    var CHUNK = 32;
-    var dy = 0;
-
-    function processChunk() {
-        var end = Math.min(dy + CHUNK, dstH);
-        for (; dy < end; dy++) {
-            var fy = dy / scale;
-            var y0 = Math.floor(fy) - LOBES + 1;
-            for (var dx = 0; dx < dstW; dx++) {
-                var fx = dx / scale;
-                var x0 = Math.floor(fx) - LOBES + 1;
-                var r=0, g=0, b=0, a=0, wSum=0;
-                for (var ky = y0; ky < y0 + 2*LOBES; ky++) {
-                    var wy = kernel(fy - ky);
-                    var sy = Math.min(Math.max(ky, 0), srcH-1);
-                    for (var kx = x0; kx < x0 + 2*LOBES; kx++) {
-                        var w  = kernel(fx - kx) * wy;
-                        var sx = Math.min(Math.max(kx, 0), srcW-1);
-                        var i  = (sy * srcW + sx) * 4;
-                        r += srcData[i]   * w;
-                        g += srcData[i+1] * w;
-                        b += srcData[i+2] * w;
-                        a += srcData[i+3] * w;
-                        wSum += w;
-                    }
-                }
-                var di = (dy * dstW + dx) * 4;
-                dst[di]   = Math.min(255, Math.max(0, r/wSum|0));
-                dst[di+1] = Math.min(255, Math.max(0, g/wSum|0));
-                dst[di+2] = Math.min(255, Math.max(0, b/wSum|0));
-                dst[di+3] = Math.min(255, Math.max(0, a/wSum|0));
-            }
-        }
-
-        var pct = 10 + Math.round((dy / dstH) * 75);
-        setProgress(pct, 'Lanczos-3: ' + Math.round(dy/dstH*100) + '%');
-
-        if (dy < dstH) {
-            requestAnimationFrame(processChunk);
-        } else {
-            dstCtx.putImageData(dstData, 0, 0);
-            setProgress(88, 'Sharpening...');
-            requestAnimationFrame(function() { applyUnsharpMask(dstCtx, dstW, dstH, scale); });
-        }
-    }
-
-    requestAnimationFrame(processChunk);
-}
-
-// ── Unsharp Mask після Lanczos ──
-function applyUnsharpMask(ctx, w, h, scale) {
-    var amount = scale >= 4 ? 1.1 : scale >= 3 ? 0.9 : 0.7;
-    var radius = scale >= 4 ? 1.5 : scale >= 3 ? 1.2 : 1.0;
-
-    var blur = document.createElement('canvas');
-    blur.width = w; blur.height = h;
-    var bCtx = blur.getContext('2d');
-    bCtx.filter = 'blur(' + radius + 'px)';
-    bCtx.drawImage(ctx.canvas, 0, 0);
-    bCtx.filter = 'none';
-
-    var orig    = ctx.getImageData(0, 0, w, h);
-    var blurred = bCtx.getImageData(0, 0, w, h);
-    var o = orig.data, bl = blurred.data;
-
-    for (var i = 0; i < o.length - 1; i += 4) {
-        o[i]   = Math.min(255, Math.max(0, (o[i]   + amount * (o[i]   - bl[i])   + 0.5)|0));
-        o[i+1] = Math.min(255, Math.max(0, (o[i+1] + amount * (o[i+1] - bl[i+1]) + 0.5)|0));
-        o[i+2] = Math.min(255, Math.max(0, (o[i+2] + amount * (o[i+2] - bl[i+2]) + 0.5)|0));
-    }
-    ctx.putImageData(orig, 0, 0);
-    finishUpscale('lanczos3_sharp_' + scale + 'x');
-}
-
-// ══════════════════════════════════════════
-// AI — TF.js bicubic + sharpening conv
-// ══════════════════════════════════════════
-function runAI() {
-    if (typeof tf === 'undefined') {
-        setProgress(5, 'TF.js не завантажено, переключаю на Lanczos...');
-        setTimeout(runLanczos, 500);
-        return;
-    }
-
-    var scale = parseInt(scaleSelect.value);
-    var srcW  = upscaleSourceImg.naturalWidth;
-    var srcH  = upscaleSourceImg.naturalHeight;
-    var dstW  = srcW * scale;
-    var dstH  = srcH * scale;
-
-    // Обмежуємо вихід до 4K
-    var MAX_OUT_AI = 2048;
-    if (dstW > MAX_OUT_AI || dstH > MAX_OUT_AI) {
-        var ratioAI = Math.min(MAX_OUT_AI / srcW, MAX_OUT_AI / srcH);
-        dstW = Math.round(srcW * ratioAI);
-        dstH = Math.round(srcH * ratioAI);
-    }
-
-    setProgress(10, 'Підготовка...');
-
-    try {
-        tf.engine().startScope();
-
-        var srcCanvas = document.createElement('canvas');
-        srcCanvas.width = srcW; srcCanvas.height = srcH;
-        srcCanvas.getContext('2d').drawImage(upscaleSourceImg, 0, 0);
-
-        setProgress(30, 'Bicubic upscale...');
-        var tensor   = tf.browser.fromPixels(srcCanvas).toFloat();
-        var expanded = tensor.expandDims(0);
-        var resized  = tf.image.resizeBicubic(expanded, [dstH, dstW], true); // [1,H,W,3]
-
-        setProgress(55, 'Edge sharpening...');
-
-        // Unsharp mask через свортку — kernel: centre=5, cross=-1
-        var sharpenK = tf.tensor4d(
-            [ 0,  -1,   0,
-             -1,   5,  -1,
-              0,  -1,   0],
-            [3, 3, 1, 1]
-        );
-        // Обробляємо кожен канал окремо
-        var chans = tf.split(resized, 3, 3); // [1,H,W,1] x3
-        var sharpened = chans.map(function(ch) {
-            return tf.conv2d(ch, sharpenK, 1, 'same').clipByValue(0, 255);
-        });
-        var result = tf.concat(sharpened, 3); // [1,H,W,3]
-
-        upscaleCanvas.width  = dstW;
-        upscaleCanvas.height = dstH;
-        setProgress(80, 'Запис результату...');
-
-        var squeezed = result.squeeze().cast('int32');
-        tf.browser.toPixels(squeezed, upscaleCanvas).then(function() {
-            tf.engine().endScope();
-            finishUpscale('ai_sharp_' + scale + 'x');
-        }).catch(function(err) {
-            tf.engine().endScope();
-            setProgress(0, 'Помилка AI, переключаю на Lanczos...');
-            setTimeout(runLanczos, 500);
-        });
-
-    } catch(err) {
-        console.error(err);
-        setProgress(0, 'Помилка AI, переключаю на Lanczos...');
-        setTimeout(runLanczos, 500);
-    }
-}
-
-// ── Завершення ──
-function finishUpscale(suffix) {
-    setProgress(100, '✓ Готово!');
-
-    var dataURL = upscaleCanvas.toDataURL('image/png');
-    var _ri = getUpscaleResultImg();
-    if (_ri) {
-        _ri.onload = function() {
-            // Відкриваємо модал тільки коли обидва зображення готові
-            var baModal = document.getElementById('baModal');
-            if (baModal) { baModal.hidden = false; initBASlider(); }
-        };
-        _ri.src = dataURL;
-    }
-
-    var blob = dataURItoBlob(dataURL);
-    var url  = URL.createObjectURL(blob);
-    downloadUpscaleBtn.href     = url;
-    downloadUpscaleBtn.download = 'upscaled_' + suffix + '.png';
-    downloadUpscaleBtn.hidden   = false;
-    upscaleBtn.disabled = false;
-
-    setTimeout(function() {
-        upscaleProgress.hidden = true;
-        setProgress(0, '');
-    }, 2000);
-}
-
-// ══════════════════════════════════════
-// BEFORE / AFTER SLIDER
-// ══════════════════════════════════════
-function initBASlider() {
-    var slider     = document.getElementById('baSlider');
-    var beforeWrap = document.getElementById('baBeforeWrap');
-    var handle     = document.getElementById('baHandle');
-    if (!slider || !beforeWrap || !handle) return;
-
-    function applyPos(pct) {
-        pct = Math.min(Math.max(pct, 2), 98);
-        beforeWrap.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
-        handle.style.left = pct + '%';
-    }
-    applyPos(50);
-
-    function getPct(clientX) {
-        var rect = slider.getBoundingClientRect();
-        return (clientX - rect.left) / rect.width * 100;
-    }
-
-    var dragging = false;
-    slider.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        dragging = true;
-        applyPos(getPct(e.clientX));
-    });
-    document.addEventListener('mousemove', function(e) {
-        if (dragging) applyPos(getPct(e.clientX));
-    });
-    document.addEventListener('mouseup', function() { dragging = false; });
-
-    slider.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        applyPos(getPct(e.touches[0].clientX));
-    }, { passive: false });
-    slider.addEventListener('touchmove', function(e) {
-        e.preventDefault();
-        applyPos(getPct(e.touches[0].clientX));
-    }, { passive: false });
-}
-
-function initBASlider() {
-    var slider     = document.getElementById('baSlider');
-    var beforeWrap = document.getElementById('baBeforeWrap');
-    var handle     = document.getElementById('baHandle');
-    var closeBtn   = document.getElementById('closeBAModal');
-    var modal      = document.getElementById('baModal');
-
-    if (!slider || !beforeWrap || !handle) return;
-
-    // Закриття модалки (той самий хрестик)
-    if (closeBtn && modal) {
-        closeBtn.onclick = function() {
-            modal.hidden = true;
-        };
-    }
-
-    function applyPos(pct) {
-        pct = Math.min(Math.max(pct, 2), 98);
-        beforeWrap.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
-        handle.style.left = pct + '%';
-    }
-    applyPos(50);
-
-    function getPct(clientX) {
-        var rect = slider.getBoundingClientRect();
-        return (clientX - rect.left) / rect.width * 100;
-    }
-
-    var dragging = false;
-    slider.onmousedown = function(e) { e.preventDefault(); dragging = true; applyPos(getPct(e.clientX)); };
-    document.onmousemove = function(e) { if (dragging) applyPos(getPct(e.clientX)); };
-    document.onmouseup = function() { dragging = false; };
-
-    // Для телефонів і планшетів
-    slider.ontouchstart = function(e) { dragging = true; applyPos(getPct(e.touches[0].clientX)); };
-    slider.ontouchmove = function(e) { if (dragging) applyPos(getPct(e.touches[0].clientX)); };
-    slider.ontouchend = function() { dragging = false; };
-}
-
-// ── ІНІЦІАЛІЗАЦІЯ МОВИ (після всіх translations) ─
-// Автовизначення мови
+// ── PRIVACY TOOLTIP POSITIONING ──────────────────
 (function() {
-    var saved = localStorage.getItem('cx-lang');
-    if (saved && TRANSLATIONS[saved]) { applyLang(saved); return; }
-    var nav = (navigator.language || navigator.userLanguage || 'en').slice(0,2).toLowerCase();
-    if (nav === 'uk') applyLang('uk');
-    else if (nav === 'de') applyLang('de');
-    else applyLang('en');
+    var badge = document.querySelector('.privacy-badge');
+    var tip   = document.querySelector('.privacy-tooltip');
+    if (!badge || !tip) return;
+
+    badge.addEventListener('mouseenter', function() {
+        var r = badge.getBoundingClientRect();
+        // Показати над кнопкою
+        tip.style.left = Math.max(8, r.left) + 'px';
+        tip.style.top  = (r.top - tip.offsetHeight - 10) + 'px';
+        // Якщо вилазить вгору — показати знизу
+        if (r.top - tip.offsetHeight - 10 < 8) {
+            tip.style.top = (r.bottom + 10) + 'px';
+        }
+    });
 })();

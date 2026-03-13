@@ -1293,16 +1293,14 @@ body {
 /* Tooltip */
 .privacy-tooltip {
     display: none;
-    position: absolute;
-    bottom: calc(100% + 10px);
-    left: 0;
-    width: 220px;
-    background: var(--surface2);
-    border: 1px solid rgba(39, 174, 96, 0.25);
-    border-radius: 10px;
+    position: fixed;
+    width: 240px;
+    background: var(--bg2);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+    border-radius: 12px;
     padding: 14px;
-    z-index: 200;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 9990;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
     pointer-events: none;
 }
 
@@ -1525,7 +1523,7 @@ body {
 /* ── RESPONSIVE / MOBILE ── */
 @media (max-width: 1200px) {
     #deco-panel { display: none; }
-    #deco-mobile-bg { display: block; }
+    #deco-mobile-bg { display: none !important; }
 }
 
 @media (max-width: 768px) {
@@ -2112,4 +2110,49 @@ input[type=range]::-moz-range-track {
     .action-row .btn-secondary { width: 100%; justify-content: center; }
     /* Повзунки — більший thumb на тачскріні */
     input[type=range]::-webkit-slider-thumb { width: 22px; height: 22px; }
+}
+
+/* ── BATCH LIST ── */
+.batch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+.batch-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: .82rem;
+    color: var(--text-dim);
+}
+.batch-item svg { flex-shrink: 0; color: var(--accent); width:16px;height:16px; }
+.batch-item .batch-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.batch-item .batch-size { color: var(--text-muted); flex-shrink: 0; }
+.batch-item .batch-status { flex-shrink:0; font-size:.75rem; }
+.batch-item .batch-status.done { color: #4fffb0; }
+.batch-item .batch-status.err  { color: #ff6b6b; }
+.batch-count {
+    font-size:.82rem;
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+/* ── FORMAT INFO BADGE ── */
+.format-badge {
+    display: none;
+    font-size: .75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    padding: 4px 8px;
+    background: rgba(232,160,48,.06);
+    border-radius: 6px;
+    border: 1px solid rgba(232,160,48,.1);
 }
