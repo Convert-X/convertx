@@ -93,7 +93,7 @@
         </ul>
 
         <div class="sidebar-footer">
-            <span class="version">v0.3.4 <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4fffb0;vertical-align:middle;margin-left:2px;" title="cache OK"></span></span>
+            <span class="version">v0.3.2 <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4fffb0;vertical-align:middle;margin-left:2px;" title="cache OK"></span></span>
             <div id="sidebarClock" class="sidebar-digiclock"></div>
             <span class="footer-hint" data-i18n="footer_hint">Більше форматів — скоро</span>
             <div class="privacy-badge" id="privacyBadge">
@@ -385,7 +385,7 @@
                 <span data-i18n="ai_notice">First run downloads the model (~5MB). Then cached in browser. Processing may take 10–60s depending on image size.</span>
             </div>
 
-            <div class="drop-zone" id="dropZoneUpscale" onclick="if(event.target===this||event.target.closest('.drop-zone')){document.getElementById('fileInputUpscale').click()}">
+            <div class="drop-zone" id="dropZoneUpscale">
                 <div class="drop-animation">
                     <svg class="drop-icon-svg" viewBox="0 0 64 64" fill="none">
                         <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="2"/>
@@ -394,10 +394,8 @@
                 </div>
                 <p class="drop-main" data-i18n="drop_main">Drop file here</p>
                 <p class="drop-or" data-i18n="drop_or">or</p>
-                <label class="btn-choose" data-i18n="drop_choose" id="upscaleChooseBtn">
-                    Choose file
-                    <input type="file" id="fileInputUpscale" accept="image/*" style="display:none">
-                </label>
+                <input type="file" id="fileInputUpscale" accept="image/*" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
+                <label class="btn-choose" data-i18n="drop_choose" for="fileInputUpscale">Choose file</label>
                 <p class="drop-hint" data-i18n="drop_hint_upscale">JPG · PNG · WEBP · recommended up to 2000×2000px for AI</p>
             </div>
 

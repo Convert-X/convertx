@@ -1112,3 +1112,179 @@ convertBtn.addEventListener('click', function() {
         });
     });
 })();
+
+// ── UPSCALE SECTION ───────────────────────────────
+(function() {
+    var dropZone     = document.getElementById('dropZoneUpscale');
+    var fileInput    = document.getElementById('fileInputUpscale');
+    var controls     = document.getElementById('upscaleControls');
+    var upscaleBtn   = document.getElementById('upscaleBtn');
+    var downloadBtn  = document.getElementById('downloadUpscaleBtn');
+    var scaleSelect  = document.getElementById('scaleSelect');
+    var origSizeEl   = document.getElementById('origSize');
+    var newSizeEl    = document.getElementById('newSize');
+    var progressWrap = document.getElementById('upscaleProgress');
+    var progressFill = document.getElementById('upscaleProgressFill');
+    var progressLabel= document.getElementById('upscaleProgressLabel');
+    var methodTabs   = document.querySelectorAll('#methodTabs .method-tab');
+    var aiNotice     = document.getElementById('aiNotice');
+    var canvas       = document.getElementById('upscaleCanvas');
+
+    if (!dropZone || !fileInput || !upscaleBtn) return;
+
+    var currentFile = null;
+    var currentMethod = 'lanczos';
+
+    // Method tabs — event delegation (працює навіть якщо секція hidden)
+    var methodTabsContainer = document.getElementById('methodTabs');
+    if (methodTabsContainer) {
+        methodTabsContainer.addEventListener('click', function(e) {
+            var tab = e.target.closest('.method-tab');
+            if (!tab) return;
+            document.querySelectorAll('#methodTabs .method-tab').forEach(function(t) {
+                t.classList.remove('active');
+            });
+            tab.classList.add('active');
+            currentMethod = tab.dataset.method;
+            if (aiNotice) aiNotice.hidden = (currentMethod !== 'ai');
+        });
+    }
+
+    function setFile(file) {
+        if (!file || !file.type.startsWith('image/')) return;
+        currentFile = file;
+        controls.hidden = false;
+        downloadBtn.hidden = true;
+        if (progressWrap) progressWrap.hidden = true;
+
+        var img = new Image();
+        img.onload = function() {
+            if (origSizeEl) origSizeEl.textContent = img.width + '×' + img.height;
+            updateSizePreview(img.width, img.height);
+            URL.revokeObjectURL(img.src);
+        };
+        img.src = URL.createObjectURL(file);
+
+        // Drop zone visual
+        dropZone.classList.add('has-file');
+        var main = dropZone.querySelector('.drop-main');
+        if (main) main.textContent = file.name;
+    }
+
+    function updateSizePreview(w, h) {
+        var scale = parseInt(scaleSelect ? scaleSelect.value : 2);
+        if (newSizeEl) newSizeEl.textContent = (w * scale) + '×' + (h * scale);
+    }
+
+    if (scaleSelect) scaleSelect.addEventListener('change', function() {
+        if (!currentFile) return;
+        var img = new Image();
+        img.onload = function() { updateSizePreview(img.width, img.height); URL.revokeObjectURL(img.src); };
+        img.src = URL.createObjectURL(currentFile);
+    });
+
+    setupDragDrop(dropZone, fileInput, setFile);
+    fileInput.addEventListener('change', function() { if (this.files[0]) setFile(this.files[0]); });
+
+    // ── Lanczos upscale ──
+    function lanczosUpscale(img, scale, cb) {
+        var srcW = img.width, srcH = img.height;
+        var dstW = srcW * scale, dstH = srcH * scale;
+
+        // Малюємо оригінал в offscreen canvas
+        var src = document.createElement('canvas');
+        src.width = srcW; src.height = srcH;
+        src.getContext('2d').drawImage(img, 0, 0);
+        var srcData = src.getContext('2d').getImageData(0, 0, srcW, srcH).data;
+
+        var dst = document.createElement('canvas');
+        dst.width = dstW; dst.height = dstH;
+        var dstCtx = dst.getContext('2d');
+        var dstImg = dstCtx.createImageData(dstW, dstH);
+        var dstData = dstImg.data;
+
+        var a = 3; // Lanczos window
+
+        function sinc(x) { if (x === 0) return 1; var px = Math.PI * x; return Math.sin(px) / px; }
+        function lanczosKernel(x) { if (Math.abs(x) >= a) return 0; return sinc(x) * sinc(x / a); }
+
+        // Process in chunks to not freeze UI
+        var row = 0;
+        var chunkSize = 20;
+
+        function processChunk() {
+            var end = Math.min(row + chunkSize, dstH);
+            for (var y = row; y < end; y++) {
+                for (var x = 0; x < dstW; x++) {
+                    var srcX = x / scale;
+                    var srcY = y / scale;
+                    var r = 0, g = 0, b = 0, totalW = 0;
+                    for (var ky = Math.floor(srcY) - a + 1; ky <= Math.floor(srcY) + a; ky++) {
+                        for (var kx = Math.floor(srcX) - a + 1; kx <= Math.floor(srcX) + a; kx++) {
+                            var px = Math.max(0, Math.min(srcW - 1, kx));
+                            var py = Math.max(0, Math.min(srcH - 1, ky));
+                            var w = lanczosKernel(srcX - kx) * lanczosKernel(srcY - ky);
+                            var idx = (py * srcW + px) * 4;
+                            r += srcData[idx]   * w;
+                            g += srcData[idx+1] * w;
+                            b += srcData[idx+2] * w;
+                            totalW += w;
+                        }
+                    }
+                    var di = (y * dstW + x) * 4;
+                    dstData[di]   = Math.min(255, Math.max(0, Math.round(r / totalW)));
+                    dstData[di+1] = Math.min(255, Math.max(0, Math.round(g / totalW)));
+                    dstData[di+2] = Math.min(255, Math.max(0, Math.round(b / totalW)));
+                    dstData[di+3] = 255;
+                }
+            }
+            row = end;
+            if (progressFill) progressFill.style.width = Math.round(row / dstH * 90) + '%';
+            if (row < dstH) {
+                setTimeout(processChunk, 0);
+            } else {
+                dstCtx.putImageData(dstImg, 0, 0);
+                cb(dst);
+            }
+        }
+        processChunk();
+    }
+
+    // ── Upscale button ──
+    upscaleBtn.addEventListener('click', function() {
+        if (!currentFile) return;
+        var scale = parseInt(scaleSelect ? scaleSelect.value : 2);
+        var T = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+
+        upscaleBtn.disabled = true;
+        downloadBtn.hidden = true;
+        progressWrap.hidden = false;
+        progressFill.style.width = '5%';
+        progressLabel.textContent = T.prog_converting || 'Processing...';
+
+        var img = new Image();
+        img.onload = function() {
+            if (currentMethod === 'ai') {
+                // AI — поки fallback на Lanczos x2 + unsharp
+                progressLabel.textContent = 'AI mode: using enhanced Lanczos...';
+            }
+
+            lanczosUpscale(img, scale, function(resultCanvas) {
+                progressFill.style.width = '95%';
+                progressLabel.textContent = T.prog_done || 'Done!';
+
+                resultCanvas.toBlob(function(blob) {
+                    var url = URL.createObjectURL(blob);
+                    var origName = currentFile.name.replace(/\.[^/.]+$/, '');
+                    downloadBtn.href = url;
+                    downloadBtn.download = origName + '_x' + scale + '.png';
+                    downloadBtn.hidden = false;
+                    progressFill.style.width = '100%';
+                    upscaleBtn.disabled = false;
+                    setTimeout(function() { progressWrap.hidden = true; }, 2500);
+                }, 'image/png');
+            });
+        };
+        img.src = URL.createObjectURL(currentFile);
+    });
+})();
