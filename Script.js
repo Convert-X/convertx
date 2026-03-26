@@ -319,7 +319,11 @@
             r.addEventListener('input', function() { updateRangeFill(this); });
         });
     }
-    document.addEventListener('DOMContentLoaded', initRanges);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initRanges);
+    } else {
+        initRanges();
+    }
     // Також через MutationObserver на випадок динамічних елементів
     var obs = new MutationObserver(function(muts) {
         muts.forEach(function(m) {
@@ -943,7 +947,9 @@ fileInput.addEventListener('change', function() {
     if (this.files && this.files.length > 0) showFiles(this.files);
 });
 
-qualityRange.addEventListener('input', function() { qualityValue.textContent = this.value; });
+qualityRange.addEventListener('input', function() {
+    qualityValue.textContent = this.value;
+});
 
 clearFileBtn.addEventListener('click', function(e) {
     e.stopPropagation();
