@@ -305,35 +305,50 @@
 
 
 // ── RANGE SLIDER FILL ─────────────────────────────
-(function() {
-    function updateRangeFill(input) {
-        var min = parseFloat(input.min) || 0;
-        var max = parseFloat(input.max) || 100;
-        var val = parseFloat(input.value) || 0;
-        var pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
-        input.style.background = 'linear-gradient(to right, var(--accent) ' + pct + ', rgba(232,160,48,.15) ' + pct + ')';
+function updateRangeFill(input) {
+    var min = parseFloat(input.min);
+    var max = parseFloat(input.max);
+    var val = parseFloat(input.value);
+    if (isNaN(min)) min = 0;
+    if (isNaN(max)) max = 100;
+    if (isNaN(val)) val = min;
+    var ratio = (val - min) / (max - min);
+    var thumbW = 18;
+    var w = input.getBoundingClientRect().width;
+    var pct;
+    if (w > 0) {
+        pct = ((ratio * (w - thumbW) + thumbW / 2) / w * 100).toFixed(2) + '%';
+    } else {
+        pct = (ratio * 100).toFixed(2) + '%';
     }
-    function initRanges() {
-        document.querySelectorAll('input[type=range]').forEach(function(r) {
+    input.style.setProperty('--val', pct);
+}
+(function() {
+    function initRanges(root) {
+        var scope = root || document;
+        scope.querySelectorAll('input[type=range]').forEach(function(r) {
+            if (!r._fillBound) {
+                r._fillBound = true;
+                r.addEventListener('input',  function() { updateRangeFill(this); });
+                r.addEventListener('change', function() { updateRangeFill(this); });
+            }
             updateRangeFill(r);
-            r.addEventListener('input', function() { updateRangeFill(this); });
         });
     }
+    window.addEventListener('resize', function() {
+        document.querySelectorAll('input[type=range]').forEach(function(r) { updateRangeFill(r); });
+    });
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initRanges);
+        document.addEventListener('DOMContentLoaded', function() {
+            requestAnimationFrame(function() { initRanges(); });
+        });
     } else {
-        initRanges();
+        requestAnimationFrame(function() { initRanges(); });
     }
-    // Також через MutationObserver на випадок динамічних елементів
     var obs = new MutationObserver(function(muts) {
         muts.forEach(function(m) {
             m.addedNodes.forEach(function(n) {
-                if (n.nodeType === 1) {
-                    n.querySelectorAll && n.querySelectorAll('input[type=range]').forEach(function(r) {
-                        updateRangeFill(r);
-                        r.addEventListener('input', function() { updateRangeFill(this); });
-                    });
-                }
+                if (n.nodeType === 1) { initRanges(n); }
             });
         });
     });
@@ -715,7 +730,10 @@ document.querySelectorAll('.nav-item:not(.soon)').forEach(function(item) {
         // Show section
         document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
         var target = document.getElementById('section-' + sectionId);
-        if (target) target.classList.add('active');
+        if (target) {
+            target.classList.add('active');
+            target.querySelectorAll('input[type=range]').forEach(function(r) { updateRangeFill(r); });
+        }
     });
 });
 
